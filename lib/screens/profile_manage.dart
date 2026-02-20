@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
-import 'sub_category.dart';
+import 'home_screen.dart';
 
 class UserProfManage extends StatefulWidget {
   const UserProfManage({super.key, this.userId = 0});
@@ -121,7 +121,7 @@ class _UserProfManageState extends State<UserProfManage> {
               onPressed: () {
                 Navigator.push(context, MaterialPageRoute(
                   builder: (context) {
-                    return SubCategoryPage(
+                    return HomeScreen(
                       userName: name,
                     );
                   },

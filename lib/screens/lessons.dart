@@ -4,7 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
-import 'sub_category.dart';
+import 'home_screen.dart';
 
 class LessonPage extends StatefulWidget {
   const LessonPage({super.key, required this.catId, required this.catName});
@@ -74,7 +74,7 @@ class _LessonPageState extends State<LessonPage> {
               onPressed: () {
                 Navigator.pushReplacement(context, MaterialPageRoute(
                   builder: (context) {
-                    return SubCategoryPage();
+                    return HomeScreen();
                   },
                 ));
               },

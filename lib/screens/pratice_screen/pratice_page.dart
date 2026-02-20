@@ -3,7 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
-import '../sub_category.dart';
+import '../home_screen.dart';
 
 class PracticePage extends StatefulWidget {
   const PracticePage({super.key, this.catId = 0, this.catName = ''});
@@ -94,7 +94,7 @@ class _PracticePageState extends State<PracticePage> {
               onPressed: () {
                 Navigator.pushReplacement(context, MaterialPageRoute(
                   builder: (context) {
-                    return SubCategoryPage();
+                    return HomeScreen();
                   },
                 ));
               },

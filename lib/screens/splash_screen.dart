@@ -1,7 +1,6 @@
+import 'package:animate_do/animate_do.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
-import 'package:flutter_animate/flutter_animate.dart';
-
 import 'introduction_screen.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -14,9 +13,14 @@ class SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    Timer(const Duration(seconds: 4), () {
+    Timer(const Duration(seconds: 3), () {
       Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (context) => const OnboardingScreen()),
+        PageRouteBuilder(
+          pageBuilder: (context, animation, secondaryAnimation) => const OnboardingScreen(),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            return FadeTransition(opacity: animation, child: child);
+          },
+        ),
       );
     });
   }
@@ -24,54 +28,104 @@ class SplashScreenState extends State<SplashScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              Color.fromARGB(255, 134, 245, 245),
-              Color.fromARGB(255, 248, 245, 88),
-              Color.fromARGB(255, 247, 193, 122)
-            ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-        ),
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 2),
-                  boxShadow: const [
-                    BoxShadow(
-                      color: Colors.black26,
-                      blurRadius: 10,
-                      spreadRadius: 2,
-                    ),
-                  ],
-                ),
-                child: const CircleAvatar(
-                  radius: 80,
-                  backgroundColor: Colors.white,
-                  backgroundImage: AssetImage('assets/images/signlogo.JPG'),
-                )
-                    .animate()
-                    .scale(duration: 3.5.seconds, curve: Curves.easeOutBack),
+      backgroundColor: const Color(0xFFF6F8F7),
+      body: Stack(
+        children: [
+          // Subtle background texture or decorations
+          Positioned(
+            top: -100,
+            right: -100,
+            child: FadeInDown(
+              child: CircleAvatar(
+                radius: 150,
+                backgroundColor: const Color(0xFF36E27B).withOpacity(0.05),
               ),
-              const SizedBox(height: 20),
-              const Text(
-                'SIGN LANGUAGE',
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ).animate().fadeIn(duration: 3.seconds, curve: Curves.easeIn),
-            ],
+            ),
           ),
-        ),
+          
+          Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                ZoomIn(
+                  duration: const Duration(milliseconds: 1000),
+                  child: Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 30,
+                          offset: const Offset(0, 10),
+                        ),
+                      ],
+                    ),
+                    child: Hero(
+                      tag: 'logo',
+                      child: Image.asset(
+                        'assets/images/sign-language.png',
+                        width: 120,
+                        height: 120,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 32),
+                FadeInUp(
+                  delay: const Duration(milliseconds: 500),
+                  child: Column(
+                    children: [
+                      Text(
+                        'SIGN ACADEMY',
+                        style: TextStyle(
+                          fontFamily: 'Lexend',
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                          color: const Color(0xFF0F172A),
+                          letterSpacing: 2.0,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'MASTER THE ART OF SIGNING',
+                        style: TextStyle(
+                          fontFamily: 'Lexend',
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: const Color(0xFF36E27B),
+                          letterSpacing: 4.0,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          
+          // Bottom loading/status
+          Positioned(
+            bottom: 60,
+            left: 0,
+            right: 0,
+            child: FadeInUp(
+              delay: const Duration(milliseconds: 1000),
+              child: Center(
+                child: SizedBox(
+                  width: 40,
+                  height: 4,
+                  child: LinearProgressIndicator(
+                    backgroundColor: const Color(0xFF36E27B).withOpacity(0.1),
+                    valueColor: const AlwaysStoppedAnimation(Color(0xFF36E27B)),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

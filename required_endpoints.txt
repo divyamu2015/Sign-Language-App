@@ -1,0 +1,73 @@
+# 💎 Sign Academy: Backend API Specification
+
+This document details the enterprise-grade REST endpoints required to fuel the "beautiful" and "functional" user experience of Sign Academy.
+
+---
+
+## 1. 🔐 Identity & Access
+- **POST /api/auth/register**
+  - Payload: `{name, email, password, phone}`
+  - Returns: `JWT Token, userID`
+- **POST /api/auth/login**
+  - Payload: `{email, password}`
+  - Returns: `JWT Token, userProfile{}`
+- **GET /api/auth/validate-token**
+  - Returns: `200 OK` if valid, `401` if expired.
+
+---
+
+## 2. 📚 Learning Architecture
+- **GET /api/categories**
+  - Returns: List of modules (e.g., Alfabets, Numbers, Greetings).
+  - Include: `id, title, icon_url, progress_percentage, is_locked`.
+- **GET /api/categories/{id}/lessons**
+  - Returns: The zigzag learning path sequence.
+  - Include: `id, lesson_title, type (video/quiz), status (locked/completed/active)`.
+- **GET /api/lessons/{id}**
+  - Returns: Theory, instructional video URL, and practice tips.
+
+---
+
+## 3. 🎯 Quizzes & Mastery (Joy Moments)
+- **GET /api/levels/{levelId}/questions**
+  - Returns: 5-10 questions with `video_url`, `options[]`, and `correct_id`.
+- **POST /api/levels/{levelId}/submit**
+  - Payload: `{score, time_taken, answers[]}`
+  - Returns: **"Joy JSON"** → `xp_gained, gems_earned, pass_status, streak_bonus, rank_change`.
+- **POST /api/modules/{id}/complete**
+  - Purpose: Critical for the **"Section Cleared"** celebration.
+  - Returns: `badge_earned_id, unlock_next_module_id`.
+
+---
+
+## 4. ⚡ User Vitality & Streaks
+- **GET /api/user/vitals**
+  - Returns: `current_streak, total_xp, gem_count, lives_remaining`.
+- **POST /api/user/daily-checkin**
+  - Use: Called on app launch. Returns if the streak was extended or lost.
+- **GET /api/user/milestones**
+  - Returns: Progress toward "Daily XP Goal" (e.g., "12/50 XP today").
+
+---
+
+## 5. 🏆 Social & Competition
+- **GET /api/leaderboard**
+  - Params: `league_id, type (weekly/all-time)`.
+  - Returns: Ranked users with avatars and point differences.
+- **GET /api/user/achievements**
+  - Returns: Locked/Unlocked high-fidelity badges (e.g., "Night Owl", "Sign Master").
+
+---
+
+## 6. 👁️ AI Vision Engine
+- **POST /api/ai/verify-gesture**
+  - Payload: `Base64 Image/Video Chunk, expected_sign_id`.
+  - Returns: `is_correct, accuracy_score, feedback_message`.
+
+---
+
+## 7. ✨ Experience Polish (The Small Things)
+- **GET /api/app/config**
+  - Returns: `daily_tip_text, featured_video_url, version_check_data`.
+- **POST /api/user/feedback**
+  - Use: In-app bug/feature reporting.
