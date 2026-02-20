@@ -44,24 +44,40 @@ class _SubCategoryPageState extends State<SubCategoryPage> {
     print('Username ================$userName');
     }
 
-  int _selectedIndex = 0; // Make _selectedIndex non-final
+  int _selectedIndex = 0;
 
-  void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-
-    if (index == 1) {
-      Navigator.push(context, MaterialPageRoute(builder: (context) {
-        return AlphabeticsScreen();
-      }));
-    }
-    if (index == 2) {
-      Navigator.push(context, MaterialPageRoute(builder: (context) {
-        return NumbersScreen();
-      }));
+  void _onNavTapped(int index) {
+    if (index == _selectedIndex && index == 0) return;
+    if (index == _selectedIndex && index == 0) return;
+    
+    setState(() => _selectedIndex = index);
+    switch (index) {
+      case 0: // Home
+        Navigator.of(context).popUntil((route) => route.isFirst);
+        break;
+      case 1: // Practice
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => PracCategoryScreen(
+              catName: 'Practice',
+              userId: widget.userId,
+            ),
+          ),
+        );
+        break;
+      case 4: // Profile
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => UserProfManage(userId: widget.userId),
+          ),
+        );
+        break;
     }
   }
+
+  void _initVideo() {} 
 
   void showAlertBox() {
     showDialog(
@@ -331,26 +347,122 @@ class _SubCategoryPageState extends State<SubCategoryPage> {
             ),
           ),
         ),
-        bottomNavigationBar: BottomNavigationBar(
-          selectedItemColor: const Color.fromARGB(255, 124, 58, 155),
-          selectedFontSize: 14.0,
-          selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold),
-          unselectedItemColor: Colors.grey,
-          unselectedFontSize: 12.0,
-          currentIndex: _selectedIndex, // Use updated state variable
-          onTap: _onItemTapped,
-          items: const [
-            BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-            BottomNavigationBarItem(
-                icon: Icon(
-                  Icons.abc,
-                  size: 33,
+        ),
+        bottomNavigationBar: _buildBottomNav(),
+      ),
+    );
+  }
+
+  Widget _buildBottomNav() {
+    return Container(
+      height: 85,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 20,
+            offset: const Offset(0, -4),
+          ),
+        ],
+        border: Border(top: BorderSide(color: Colors.grey.shade100)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.only(top: 6, bottom: 16, left: 12, right: 12),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            _BottomNavItem(
+              icon: Icons.home_rounded,
+              label: 'Home',
+              isActive: _selectedIndex == 0,
+              onTap: () => _onNavTapped(0),
+            ),
+            _BottomNavItem(
+              icon: Icons.fitness_center_rounded,
+              label: 'Practice',
+              isActive: _selectedIndex == 1,
+              onTap: () => _onNavTapped(1),
+            ),
+            // Camera FAB
+            GestureDetector(
+              onTap: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('AI Camera coming soon!', style: GoogleFonts.lexend()),
+                    behavior: SnackBarBehavior.floating,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                );
+              },
+              child: Transform.translate(
+                offset: const Offset(0, -18),
+                child: Container(
+                  width: 60,
+                  height: 60,
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF36E27B), Color(0xFF2DB361)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF36E27B).withOpacity(0.35),
+                        blurRadius: 16,
+                        offset: const Offset(0, 6),
+                      ),
+                    ],
+                    border: Border.all(color: Colors.white, width: 4),
+                  ),
+                  child: const Icon(Icons.camera_alt_rounded, color: Color(0xFF112117), size: 28),
                 ),
-                label: 'Alphabets'),
-            BottomNavigationBarItem(
-                icon: Icon(Icons.numbers), label: 'Numbers'),
+              ),
+            ),
+            _BottomNavItem(
+              icon: Icons.person_rounded,
+              label: 'Profile',
+              isActive: _selectedIndex == 4,
+              onTap: () => _onNavTapped(4),
+            ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _BottomNavItem extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final bool isActive;
+  final VoidCallback onTap;
+  const _BottomNavItem({required this.icon, required this.label, this.isActive = false, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            icon,
+            color: isActive ? const Color(0xFF36E27B) : const Color(0xFF94A3B8),
+            size: 24,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: GoogleFonts.lexend(
+              fontSize: 10,
+              fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
+              color: isActive ? const Color(0xFF36E27B) : const Color(0xFF94A3B8),
+            ),
+          ),
+        ],
       ),
     );
   }

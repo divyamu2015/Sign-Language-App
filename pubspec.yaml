@@ -76,12 +76,12 @@ flutter:
   # the material Icons class.
   uses-material-design: true
 
-  # assets:
-  #   - assets/images/
-  #   - assets/videos/istockphoto-2202262964-640_adpp_is.mp4
-  #   - assets/videos/practice.mp4
-  #   - assets/videos/alphabetics.mp4
-  #   - assets/videos/numbers.mp4
+  assets:
+    - assets/images/
+    - assets/videos/istockphoto-2202262964-640_adpp_is.mp4
+    - assets/videos/practice.mp4
+    - assets/videos/alphabetics.mp4
+    - assets/videos/numbers.mp4
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

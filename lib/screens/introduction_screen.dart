@@ -2,6 +2,7 @@ import 'package:animate_do/animate_do.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:video_player/video_player.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../authentication_screen/login_screen/login_view/login_page.dart';
 
 class OnboardingScreen extends StatefulWidget {
@@ -73,6 +74,16 @@ class OnboardingScreenState extends State<OnboardingScreen> {
       backgroundColor: const Color(0xFFF6F8F7),
       body: Stack(
         children: [
+          // Background Decoration
+          Positioned.fill(
+            child: Opacity(
+              opacity: 0.03,
+              child: Image.asset(
+                'assets/images/back2.jpg',
+                fit: BoxFit.cover,
+              ),
+            ),
+          ),
           PageView.builder(
             controller: _controller,
             itemCount: onboardingData.length,
@@ -118,8 +129,7 @@ class OnboardingScreenState extends State<OnboardingScreen> {
                       onPressed: _goToLogin,
                       child: Text(
                         'SKIP',
-                        style: TextStyle(
-                          fontFamily: 'Lexend',
+                        style: GoogleFonts.lexend(
                           fontSize: 14,
                           fontWeight: FontWeight.bold,
                           color: Colors.grey.shade400,
@@ -153,8 +163,7 @@ class OnboardingScreenState extends State<OnboardingScreen> {
                   children: [
                     Text(
                       _currentPage == onboardingData.length - 1 ? 'GET STARTED' : 'CONTINUE',
-                      style: const TextStyle(
-                        fontFamily: 'Lexend',
+                      style: GoogleFonts.lexend(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                         letterSpacing: 0.5,
@@ -302,11 +311,10 @@ class _OnboardingContentState extends State<OnboardingContent> {
                   ),
                   child: Text(
                     widget.subtitle,
-                    style: const TextStyle(
-                      fontFamily: 'Lexend',
+                    style: GoogleFonts.lexend(
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF36E27B),
+                      color: const Color(0xFF36E27B),
                       letterSpacing: 1.5,
                     ),
                   ),
@@ -317,12 +325,11 @@ class _OnboardingContentState extends State<OnboardingContent> {
                 duration: const Duration(milliseconds: 800),
                 delay: const Duration(milliseconds: 200),
                 child: Text(
-                  widget.title,
-                  style: const TextStyle(
-                    fontFamily: 'Lexend',
+                   widget.title,
+                  style: GoogleFonts.lexend(
                     fontSize: 40,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF0F172A),
+                    color: const Color(0xFF0F172A),
                     height: 1.1,
                   ),
                 ),
@@ -332,9 +339,8 @@ class _OnboardingContentState extends State<OnboardingContent> {
                 duration: const Duration(milliseconds: 800),
                 delay: const Duration(milliseconds: 400),
                 child: Text(
-                  widget.description,
-                  style: TextStyle(
-                    fontFamily: 'Lexend',
+                   widget.description,
+                  style: GoogleFonts.lexend(
                     fontSize: 16,
                     color: Colors.grey.shade500,
                     height: 1.6,

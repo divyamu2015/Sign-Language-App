@@ -50,23 +50,14 @@ This document details the enterprise-grade REST endpoints required to fuel the "
 
 ---
 
-## 5. 🏆 Social & Competition
-- **GET /api/leaderboard**
-  - Params: `league_id, type (weekly/all-time)`.
-  - Returns: Ranked users with avatars and point differences.
-- **GET /api/user/achievements**
-  - Returns: Locked/Unlocked high-fidelity badges (e.g., "Night Owl", "Sign Master").
-
----
-
-## 6. 👁️ AI Vision Engine
+## 5. 👁️ AI Vision Engine
 - **POST /api/ai/verify-gesture**
   - Payload: `Base64 Image/Video Chunk, expected_sign_id`.
   - Returns: `is_correct, accuracy_score, feedback_message`.
 
 ---
 
-## 7. ✨ Experience Polish (The Small Things)
+## 6. ✨ Experience Polish (The Small Things)
 - **GET /api/app/config**
   - Returns: `daily_tip_text, featured_video_url, version_check_data`.
 - **POST /api/user/feedback**

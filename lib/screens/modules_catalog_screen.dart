@@ -164,12 +164,6 @@ class _ModulesCatalogScreenState extends State<ModulesCatalogScreen> {
         break;
       case 1: // Modules (current)
         break;
-      case 3: // Ranking
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => AnimatedGridScreen(userId: widget.userId)),
-        );
-        break;
       case 4: // Profile
         Navigator.push(
           context,
@@ -454,13 +448,6 @@ class _ModulesCatalogScreenState extends State<ModulesCatalogScreen> {
                   child: const Icon(Icons.camera_alt_rounded, color: Color(0xFF182210), size: 28),
                 ),
               ),
-            ),
-            _BottomNavItem(
-              icon: Icons.leaderboard_rounded,
-              label: 'Ranking',
-              isSelected: _selectedNavIndex == 3,
-              selectedColor: _CatalogColors.primary,
-              onTap: () => _onNavTapped(3),
             ),
             _BottomNavItem(
               icon: Icons.person_rounded,

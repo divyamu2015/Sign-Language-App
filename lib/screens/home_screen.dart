@@ -95,14 +95,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           ),
         );
         break;
-      case 3: // Ranking / Quiz
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => AnimatedGridScreen(userId: widget.userId),
-          ),
-        );
-        break;
       case 4: // Profile
         Navigator.push(
           context,
@@ -703,12 +695,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     child: const Icon(Icons.camera_alt_rounded, color: Color(0xFF112117), size: 28),
                   ),
                 ),
-              ),
-              _NavItem(
-                icon: Icons.leaderboard_rounded,
-                label: 'Ranking',
-                isSelected: _selectedNavIndex == 3,
-                onTap: () => _onNavTapped(3),
               ),
               _NavItem(
                 icon: Icons.person_rounded,
