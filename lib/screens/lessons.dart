@@ -31,7 +31,7 @@ class _LessonPageState extends State<LessonPage> {
 
   Future<void> fetchVocabulary() async {
     final response = await http.get(Uri.parse(
-        'https://417sptdw-8003.inc1.devtunnels.ms/userapp/categories/$catid/lessons/'));
+        'https://5h44kl7q-8001.inc1.devtunnels.ms/userapp/categories/$catid/lessons/'));
     if (response.statusCode == 200) {
       setState(() {
         vocabulary = json.decode(response.body);

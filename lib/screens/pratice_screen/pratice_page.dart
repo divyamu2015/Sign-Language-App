@@ -32,7 +32,7 @@ class _PracticePageState extends State<PracticePage> {
 
   Future<void> fetchQuestions() async {
     final uri =
-        'https://417sptdw-8003.inc1.devtunnels.ms/userapp/random-questions/$catId/';
+        'https://5h44kl7q-8001.inc1.devtunnels.ms/userapp/random-questions/$catId/';
     // print(uri);
     try {
       final response = await http

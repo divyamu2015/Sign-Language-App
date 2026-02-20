@@ -21,7 +21,7 @@ class _FAQScreenState extends State<FAQScreen> {
 
   Future<void> fetchFAQs() async {
     final uri =
-        Uri.parse('https://417sptdw-8003.inc1.devtunnels.ms/userapp/faqs/');
+        Uri.parse('https://5h44kl7q-8001.inc1.devtunnels.ms/userapp/faqs/');
     try {
       final response = await http.get(uri);
       if (response.statusCode == 200) {

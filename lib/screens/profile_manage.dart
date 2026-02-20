@@ -28,7 +28,7 @@ class _UserProfManageState extends State<UserProfManage> {
 
   Future<void> fetchUserProfile() async {
     final uri = Uri.parse(
-        'https://417sptdw-8003.inc1.devtunnels.ms/userapp/view_profile/${widget.userId}/');
+        'https://5h44kl7q-8001.inc1.devtunnels.ms/userapp/view_profile/${widget.userId}/');
     try {
       final response = await http.get(uri);
       if (response.statusCode == 200) {
@@ -57,7 +57,7 @@ class _UserProfManageState extends State<UserProfManage> {
   void saveProfile() async {
     if (_formKey.currentState!.validate()) {
       final uri = Uri.parse(
-          'https://417sptdw-8003.inc1.devtunnels.ms/userapp/profile/update/${widget.userId}/');
+          'https://5h44kl7q-8001.inc1.devtunnels.ms/userapp/profile/update/${widget.userId}/');
 
       final updatedData = {
         "username": name,

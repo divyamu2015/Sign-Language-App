@@ -26,7 +26,7 @@ class _QuizScreenState extends State<QuizScreen> {
   int currentQuestionIndex = 0;
 
   // Base API URL
-  final String baseUrl = 'https://417sptdw-8003.inc1.devtunnels.ms/userapp';
+  final String baseUrl = 'https://5h44kl7q-8001.inc1.devtunnels.ms/userapp';
 
   @override
   void initState() {
@@ -49,7 +49,7 @@ class _QuizScreenState extends State<QuizScreen> {
 
       // Create URI with query parameters
       final uri = Uri.parse(
-              'https://417sptdw-8003.inc1.devtunnels.ms/userapp/api/levels/${widget.levelId}/questions/')
+              'https://5h44kl7q-8001.inc1.devtunnels.ms/userapp/api/levels/${widget.levelId}/questions/')
           .replace(queryParameters: {
         'user_id': userId.toString(),
       });
