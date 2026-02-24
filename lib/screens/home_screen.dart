@@ -18,6 +18,7 @@ import 'about_quiz.dart';
 import '../authentication_screen/login_screen/login_view/login_page.dart';
 import 'modules_catalog_screen.dart';
 import 'learning_path_screen.dart';
+import 'sign_dictionary_screen.dart';
 import 'package:signin_language_app/config/dev_config.dart';
 
 // ─── Color Palette ───────────────────────────────────────────────────────────
@@ -186,8 +187,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 SliverToBoxAdapter(child: _buildHeader()),
                 // ─── Stats Bar ──────────────────────────────────────
                 SliverToBoxAdapter(child: _buildStatsBar()),
+                // ─── Sign Dictionary Card ───────────────────────────
+                SliverToBoxAdapter(child: _buildDictionaryCard()),
                 // ─── AI Camera Feature ──────────────────────────────
                 SliverToBoxAdapter(child: _buildAiCameraCard()),
+
                 // ─── Learning Modules Title ─────────────────────────
                 SliverToBoxAdapter(
                   child: Padding(
@@ -412,6 +416,78 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               child: _DailyGoalCard(progress: 0.8, lessonsCompleted: 4, totalLessons: 5),
             ),
           ],
+        ),
+      ),
+    );
+  // ─── Sign Dictionary Card ────────────────────────────────────────────────
+  Widget _buildDictionaryCard() {
+    return FadeInUp(
+      delay: const Duration(milliseconds: 300),
+      duration: const Duration(milliseconds: 600),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
+        child: GestureDetector(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const SignDictionaryScreen()),
+            );
+          },
+          child: Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFF4FC3F7), Color(0xFF29B6F6)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF4FC3F7).withOpacity(0.3),
+                  blurRadius: 15,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.menu_book_rounded, color: Colors.white, size: 28),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'AI Sign Dictionary',
+                        style: GoogleFonts.lexend(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Search 2,000+ signs instantly',
+                        style: GoogleFonts.lexend(
+                          color: Colors.white.withOpacity(0.9),
+                          fontSize: 13,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white, size: 16),
+              ],
+            ),
+          ),
         ),
       ),
     );
