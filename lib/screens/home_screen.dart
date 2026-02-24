@@ -419,6 +419,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         ),
       ),
     );
+  }
   // ─── Sign Dictionary Card ────────────────────────────────────────────────
   Widget _buildDictionaryCard() {
     return FadeInUp(
