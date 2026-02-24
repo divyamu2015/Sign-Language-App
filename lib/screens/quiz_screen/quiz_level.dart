@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 import 'quiz_page.dart';
+import 'package:signin_language_app/config/dev_config.dart';
 
 class QuizScreen extends StatefulWidget {
   final int levelId;
@@ -40,11 +41,15 @@ class _QuizScreenState extends State<QuizScreen> {
       userId = prefs.getInt('user_id');
 
       if (userId == null) {
-        setState(() {
-          errorMessage = 'User not logged in. Please login first.';
-          isLoading = false;
-        });
-        return;
+        if (DevConfig.useDemoMode) {
+          userId = DevConfig.demoUserId;
+        } else {
+          setState(() {
+            errorMessage = 'User not logged in. Please login first.';
+            isLoading = false;
+          });
+          return;
+        }
       }
 
       // Create URI with query parameters
@@ -74,15 +79,49 @@ class _QuizScreenState extends State<QuizScreen> {
           isLoading = false;
         });
       } else {
-        final errorData = json.decode(response.body);
-        throw Exception(errorData['error'] ?? 'Failed to load questions');
+        throw Exception('Failed to load questions: ${response.statusCode}');
       }
     } catch (e) {
-      setState(() {
-        errorMessage = e.toString();
-        isLoading = false;
-      });
-      debugPrint('Error loading questions: $e');
+      debugPrint('Error loading questions: $e');
+      if (DevConfig.useDemoMode) {
+        // Fallback data for working without backend
+        setState(() {
+          questions = [
+            {
+              "id": 1,
+              "text": "What does this sign represent?",
+              "image": null,
+              "options": [
+                {"option_number": 1, "text": "Letter A", "image": null},
+                {"option_number": 2, "text": "Letter B", "image": null},
+                {"option_number": 3, "text": "Letter C", "image": null},
+                {"option_number": 4, "text": "Letter D", "image": null}
+              ]
+            },
+            {
+              "id": 2,
+              "text": "Which sign is used for 'Hello'?",
+              "image": null,
+              "options": [
+                {"option_number": 1, "text": "Wave hand", "image": null},
+                {"option_number": 2, "text": "Touch forehead", "image": null},
+                {"option_number": 3, "text": "Clap hands", "image": null},
+                {"option_number": 4, "text": "Point finger", "image": null}
+              ]
+            }
+          ];
+          for (var q in questions) {
+            selectedAnswers[q['id']] = null;
+          }
+          isLoading = false;
+          errorMessage = ''; // Clear error message since we have fallback
+        });
+      } else {
+        setState(() {
+          errorMessage = e.toString();
+          isLoading = false;
+        });
+      }
     }
   }
 
@@ -119,10 +158,21 @@ class _QuizScreenState extends State<QuizScreen> {
         throw Exception('Failed to submit answers: ${response.statusCode}');
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: ${e.toString()}')),
-      );
       debugPrint('Error submitting answers: $e');
+      if (DevConfig.useDemoMode) {
+        // Fallback result for working without backend
+        _showResultDialog({
+          'status': 'passed',
+          'message': 'Great job! You passed the demo quiz.',
+          'score': 20,
+          'total_score': 100,
+          'next_level_id': widget.levelId + 1,
+        });
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: ${e.toString()}')),
+        );
+      }
     }
   }
 
@@ -220,8 +270,11 @@ class _QuizScreenState extends State<QuizScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 22),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
         title: Text('Level ${widget.levelId} Quiz'),
-        
       ),
       body: Container(
         decoration: const BoxDecoration(

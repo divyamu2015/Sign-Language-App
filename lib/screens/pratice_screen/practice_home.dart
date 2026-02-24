@@ -6,6 +6,7 @@ import 'package:animate_do/animate_do.dart';
 import 'package:http/http.dart' as http;
 import '../../../uri_links/links.dart';
 import 'pratice_page.dart';
+import 'package:signin_language_app/config/dev_config.dart';
 
 class PracCategoryScreen extends StatefulWidget {
   final String catName;
@@ -40,9 +41,22 @@ class _PracCategoryScreenState extends State<PracCategoryScreen> {
           data = jsonDecode(response.body);
         });
         print('Category is============== $data');
+      } else {
+        throw Exception('Server error: ${response.statusCode}');
       }
     } catch (e) {
       print('Error is ${e.toString()}');
+      if (DevConfig.useDemoMode) {
+        // Fallback data for working without backend
+        setState(() {
+          data = [
+            {"id": 1, "name": "Basic Alphabets", "image": "assets/images/sign-language.png"},
+            {"id": 2, "name": "Numbers 1-10", "image": "assets/images/sign-language.png"},
+            {"id": 3, "name": "Simple Greetings", "image": "assets/images/sign-language.png"},
+            {"id": 4, "name": "Family Signs", "image": "assets/images/sign-language.png"}
+          ];
+        });
+      }
     }
   }
 
@@ -51,6 +65,11 @@ class _PracCategoryScreenState extends State<PracCategoryScreen> {
     return SafeArea(
       child: Scaffold(
         appBar: AppBar(
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_ios_new_rounded,
+                color: Color.fromARGB(255, 87, 49, 94), size: 22),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
           title: Text(catName!,
               style: GoogleFonts.poppins(
                   fontSize: 22,
@@ -89,12 +108,17 @@ class _PracCategoryScreenState extends State<PracCategoryScreen> {
                           categoryName: data[index]['name'],
                           imageWidget: ClipRRect(
                             borderRadius: BorderRadius.circular(8),
-                            child: Image.network(
-                              "$baseUri${data[index]['image']}",
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) =>
-                                  const Icon(Icons.error, color: Colors.red),
-                            ),
+                            child: data[index]['image'] != null && data[index]['image'].startsWith('assets/')
+                                ? Image.asset(
+                                    data[index]['image'],
+                                    fit: BoxFit.cover,
+                                  )
+                                : Image.network(
+                                    "$baseUri${data[index]['image']}",
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) =>
+                                        Image.asset('assets/images/sign-language.png', fit: BoxFit.cover),
+                                  ),
                           ),
                         ),
                       );

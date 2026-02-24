@@ -139,6 +139,29 @@ class _LoginPageState extends State<LoginPage> {
                 child: Stack(
                   alignment: Alignment.center,
                   children: [
+                    // Back Button
+                    Positioned(
+                      top: 40,
+                      left: 20,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.05),
+                              blurRadius: 10,
+                              offset: const Offset(0, 5),
+                            ),
+                          ],
+                        ),
+                        child: IconButton(
+                          icon: const Icon(Icons.arrow_back_ios_new_rounded,
+                              color: Color(0xFF0F172A), size: 20),
+                          onPressed: () => Navigator.of(context).pop(),
+                        ),
+                      ),
+                    ),
                     // Floating Shapes
                     Positioned(
                       top: 40,

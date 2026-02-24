@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:video_player/video_player.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'home_screen.dart';
+import 'package:signin_language_app/config/dev_config.dart';
 import '../authentication_screen/login_screen/login_view/login_page.dart';
 
 class OnboardingScreen extends StatefulWidget {
@@ -57,10 +59,18 @@ class OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   void _goToLogin() {
+    Widget nextScreen;
+    if (DevConfig.useDemoMode) {
+      nextScreen = const HomeScreen(
+          userId: DevConfig.demoUserId, userName: DevConfig.demoUserName);
+    } else {
+      nextScreen = const LoginPage();
+    }
+
     Navigator.pushReplacement(
       context,
       PageRouteBuilder(
-        pageBuilder: (context, animation, secondaryAnimation) => const LoginPage(),
+        pageBuilder: (context, animation, secondaryAnimation) => nextScreen,
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           return FadeTransition(opacity: animation, child: child);
         },

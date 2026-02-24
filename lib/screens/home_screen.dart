@@ -18,6 +18,7 @@ import 'about_quiz.dart';
 import '../authentication_screen/login_screen/login_view/login_page.dart';
 import 'modules_catalog_screen.dart';
 import 'learning_path_screen.dart';
+import 'package:signin_language_app/config/dev_config.dart';
 
 // ─── Color Palette ───────────────────────────────────────────────────────────
 class AppColors {
@@ -68,10 +69,45 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           _categories = jsonDecode(response.body);
           _isLoading = false;
         });
+      } else {
+        throw Exception('Server error: ${response.statusCode}');
       }
     } catch (e) {
       debugPrint('Error fetching categories: $e');
-      setState(() => _isLoading = false);
+      if (DevConfig.useDemoMode) {
+        // Fallback data for working without backend
+        setState(() {
+          _categories = [
+            {
+              "id": 1,
+              "category_name": "Alphabets",
+              "description": "Learn ASL Alphabets (A-Z)",
+              "image": null
+            },
+            {
+              "id": 2,
+              "category_name": "Numbers",
+              "description": "Master basic counting in sign",
+              "image": null
+            },
+            {
+              "id": 3,
+              "category_name": "Greetings",
+              "description": "Common daily phrases and greetings",
+              "image": null
+            },
+            {
+              "id": 4,
+              "category_name": "Family",
+              "description": "Signs for family members",
+              "image": null
+            }
+          ];
+          _isLoading = false;
+        });
+      } else {
+        setState(() => _isLoading = false);
+      }
     }
   }
 

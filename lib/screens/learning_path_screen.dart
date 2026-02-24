@@ -7,6 +7,7 @@ import 'quiz_screen/premium_quiz_screen.dart';
 import '../uri_links/links.dart';
 import 'home_screen.dart';
 import 'pratice_screen/practice_home.dart';
+import 'package:signin_language_app/config/dev_config.dart';
 import 'profile_manage.dart';
 
 class LearningPathScreen extends StatefulWidget {
@@ -74,10 +75,35 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
           _lessons = jsonDecode(response.body);
           _isLoading = false;
         });
+      } else {
+        throw Exception('Server error: ${response.statusCode}');
       }
     } catch (e) {
       debugPrint('Error fetching lessons: $e');
-      setState(() => _isLoading = false);
+      if (DevConfig.useDemoMode) {
+        // Fallback data for working without backend
+        setState(() {
+          if (widget.title.toLowerCase().contains('alphabet')) {
+            // Generate A-Z for Alphabet path
+            _lessons = List.generate(26, (index) => {
+              "id": index + 1,
+              "name": String.fromCharCode(65 + index), // A, B, C...
+              "description": "Learn to sign '${String.fromCharCode(65 + index)}'"
+            });
+          } else {
+            _lessons = [
+              {"id": 1, "name": "Introduction", "description": "Basic introduction to the topic"},
+              {"id": 2, "name": "Basic Signs", "description": "Learn the most common signs"},
+              {"id": 3, "name": "Common Phrases", "description": "Useful phrases for daily life"},
+              {"id": 4, "name": "Advanced Practice", "description": "Refine your skills"},
+              {"id": 5, "name": "Final Review", "description": "Test everything you learned"}
+            ];
+          }
+          _isLoading = false;
+        });
+      } else {
+        setState(() => _isLoading = false);
+      }
     }
   }
   @override
@@ -129,7 +155,13 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
             children: [
               Row(
                 children: [
-                  const Icon(Icons.local_fire_department_rounded, color: Color(0xFF6DE00F), size: 32),
+                  IconButton(
+                    icon: const Icon(Icons.arrow_back_ios_new_rounded,
+                        color: Color(0xFF182210), size: 22),
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                  const Icon(Icons.local_fire_department_rounded,
+                      color: Color(0xFF6DE00F), size: 32),
                   const SizedBox(width: 8),
                   Text(
                     '7 Day Streak',
@@ -162,34 +194,38 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
             ],
           ),
           const SizedBox(height: 24),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                widget.title,
-                style: GoogleFonts.spaceGrotesk(fontSize: 24, fontWeight: FontWeight.bold),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    widget.title,
+                    style: GoogleFonts.spaceGrotesk(
+                        fontSize: 24, fontWeight: FontWeight.bold),
+                  ),
+                  Text(
+                    '${((_lessons.where((l) => _lessons.indexOf(l) < 1).length / (_lessons.isEmpty ? 1 : _lessons.length)) * 100).toInt()}% Complete',
+                    style: GoogleFonts.spaceGrotesk(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: const Color(0xFF6DE00F),
+                    ),
+                  ),
+                ],
               ),
-              Text(
-                '45% Complete',
-                style: GoogleFonts.spaceGrotesk(
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  color: const Color(0xFF6DE00F),
+              const SizedBox(height: 10),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: LinearProgressIndicator(
+                  value: _lessons.isEmpty
+                      ? 0
+                      : (_lessons.where((l) => _lessons.indexOf(l) < 1).length /
+                          _lessons.length),
+                  backgroundColor: const Color(0xFFE2E8F0),
+                  valueColor: const AlwaysStoppedAnimation(Color(0xFF6DE00F)),
+                  minHeight: 12,
                 ),
               ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(10),
-            child: const LinearProgressIndicator(
-              value: 0.45,
-              backgroundColor: Color(0xFFE2E8F0),
-              valueColor: AlwaysStoppedAnimation(Color(0xFF6DE00F)),
-              minHeight: 12,
-            ),
-          ),
         ],
       ),
     );
@@ -216,51 +252,59 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
       );
     }
 
-    // We reversed lessons to show intro at the bottom? 
-    // Usually path starts from bottom.
-    final reversedLessons = _lessons.reversed.toList();
+    // For Alphabets, we want a clear A-Z progression.
+    final lessonsToDisplay = _lessons;
 
-    return Column(
-      children: reversedLessons.asMap().entries.map((entry) {
-        int index = entry.key;
-        var lesson = entry.value;
-        
-        // Zig-zag offset logic
-        double offset = 0;
-        if (index % 4 == 1) offset = -50;
-        if (index % 4 == 3) offset = 50;
-        if (index % 4 == 2) offset = 0; // middle
-        
-        bool isActive = index == 2; // Hardcoded active for now
-        bool isCompleted = index > 2;
-        bool isLocked = index < 2;
+    return Center(
+      child: Column(
+        children: lessonsToDisplay.asMap().entries.map((entry) {
+          int index = entry.key;
+          var lesson = entry.value;
 
-        return Column(
-          children: [
-            _buildPathNode(
-              label: lesson['name'] ?? 'Lesson',
-              subLabel: 'Learn',
-              isActive: isActive,
-              isCompleted: isCompleted,
-              isLocked: isLocked,
-              offset: offset,
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => PremiumQuizScreen(levelId: 1, userId: widget.userId)),
-                );
-              },
-            ),
-            const SizedBox(height: 40),
-          ],
-        );
-      }).toList(),
+          // Zig-zag horizontal offset (reduced for better mobile fit)
+          double offset = 0;
+          int cycle = index % 4;
+          if (cycle == 1) offset = -40;
+          if (cycle == 3) offset = 40;
+          // 0 and 2 are middle
+
+          // Progression Logic
+          bool isCompleted = index < 1; 
+          bool isActive = index == 1;
+          bool isLocked = index > 1;
+
+          String nodeText = lesson['name'] ?? '';
+          bool isAlphabet = nodeText.length == 1;
+
+          return Column(
+            children: [
+              _buildPathNode(
+                label: isAlphabet ? "Letter $nodeText" : (lesson['name'] ?? 'Lesson'),
+                bubbleContent: nodeText,
+                isActive: isActive,
+                isCompleted: isCompleted,
+                isLocked: isLocked,
+                offset: offset,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => PremiumQuizScreen(
+                            levelId: lesson['id'], userId: widget.userId)),
+                  );
+                },
+              ),
+              const SizedBox(height: 50),
+            ],
+          );
+        }).toList(),
+      ),
     );
   }
 
   Widget _buildPathNode({
     required String label,
-    String? subLabel,
+    required String bubbleContent,
     bool isCompleted = false,
     bool isLocked = false,
     bool isActive = false,
@@ -269,35 +313,39 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
   }) {
     return Transform.translate(
       offset: Offset(offset, 0),
-      child: FadeIn(
+      child: FadeInUp(
+        duration: const Duration(milliseconds: 600),
         child: Column(
           children: [
             if (isActive)
-              Bounce(
-                infinite: true,
-                child: Container(
-                  margin: const EdgeInsets.only(bottom: 12),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF8B5CF6),
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(color: const Color(0xFF8B5CF6).withOpacity(0.4), blurRadius: 15, offset: const Offset(0, 5))
-                    ],
-                  ),
-                  child: Text(
-                    'JUMP IN!',
-                    style: GoogleFonts.spaceGrotesk(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
-                  ),
+              Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF8B5CF6),
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                        color: const Color(0xFF8B5CF6).withOpacity(0.4),
+                        blurRadius: 15,
+                        offset: const Offset(0, 5))
+                  ],
+                ),
+                child: Text(
+                  'JUMP IN!',
+                  style: GoogleFonts.spaceGrotesk(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold),
                 ),
               ),
             GestureDetector(
               onTap: isLocked ? null : (onTap ?? () {}),
               child: Stack(
                 alignment: Alignment.center,
+                clipBehavior: Clip.none,
                 children: [
-                  if (isActive)
-                    _PulseEffect(),
+                  if (isActive) _PulseEffect(),
                   Container(
                     width: 100,
                     height: 100,
@@ -331,15 +379,13 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
                           ? const Icon(Icons.lock_rounded, color: Color(0xFF94A3B8), size: 32)
                           : isCompleted
                               ? const Icon(Icons.check_rounded, color: Colors.white, size: 48, weight: 1000)
-                              : Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Text(
-                                      subLabel ?? '',
-                                      style: GoogleFonts.spaceGrotesk(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
-                                    ),
-                                    const Icon(Icons.videocam_rounded, color: Colors.white, size: 24),
-                                  ],
+                              : Text(
+                                  bubbleContent,
+                                  style: GoogleFonts.spaceGrotesk(
+                                    color: Colors.white, 
+                                    fontSize: bubbleContent.length > 2 ? 18 : 42, 
+                                    fontWeight: FontWeight.bold
+                                  ),
                                 ),
                     ),
                   ),
@@ -528,15 +574,17 @@ class _PulseEffect extends StatefulWidget {
   State<_PulseEffect> createState() => _PulseEffectState();
 }
 
-class _PulseEffectState extends State<_PulseEffect> with SingleTickerProviderStateMixin {
+class _PulseEffectState extends State<_PulseEffect>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
-  late Animation<double> _animation;
 
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(duration: const Duration(seconds: 2), vsync: this)..repeat();
-    _animation = Tween<double>(begin: 0.95, end: 1.5).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 2000),
+      vsync: this,
+    )..repeat();
   }
 
   @override
@@ -548,13 +596,22 @@ class _PulseEffectState extends State<_PulseEffect> with SingleTickerProviderSta
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
-      animation: _animation,
-      builder: (context, child) => Container(
-        width: 100 * _animation.value,
-        height: 100 * _animation.value,
-        decoration: BoxDecoration(
-          color: const Color(0xFF8B5CF6).withOpacity(1 - (_controller.value)),
-          shape: BoxShape.circle,
+      animation: _controller,
+      builder: (context, child) => Opacity(
+        opacity: (1.0 - _controller.value).clamp(0.0, 1.0),
+        child: Transform.scale(
+          scale: 1.0 + (_controller.value * 0.8),
+          child: Container(
+            width: 100,
+            height: 100,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: const Color(0xFF8B5CF6).withOpacity(0.5),
+                width: 4,
+              ),
+            ),
+          ),
         ),
       ),
     );

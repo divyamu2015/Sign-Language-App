@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
 import 'home_screen.dart';
+import 'package:signin_language_app/config/dev_config.dart';
 
 class UserProfManage extends StatefulWidget {
   const UserProfManage({super.key, this.userId = 0});
@@ -45,6 +46,16 @@ class _UserProfManageState extends State<UserProfManage> {
       }
     } catch (e) {
       print('Exception: $e');
+      if (DevConfig.useDemoMode) {
+        // Fallback data for working without backend
+        setState(() {
+          name = DevConfig.demoUserName;
+          email = "demo@example.com";
+          phone = "+1 234 567 890";
+          addressController.text = "123 Sign Street";
+          placeController.text = "Hand City";
+        });
+      }
     }
   }
 
@@ -118,16 +129,8 @@ class _UserProfManageState extends State<UserProfManage> {
         backgroundColor: const Color(0xFFF5F5F5), // light background
         appBar: AppBar(
           leading: IconButton(
-              onPressed: () {
-                Navigator.push(context, MaterialPageRoute(
-                  builder: (context) {
-                    return HomeScreen(
-                      userName: name,
-                    );
-                  },
-                ));
-              },
-              icon: Icon(Icons.arrow_back)),
+              onPressed: () => Navigator.of(context).pop(),
+              icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 22)),
           backgroundColor: const Color.fromARGB(255, 208, 150, 231),
           title: const Text("Profile Management"),
           actions: [

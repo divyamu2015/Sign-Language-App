@@ -81,6 +81,11 @@ class _PracticePageState extends State<PracticePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded,
+              color: Color.fromARGB(255, 87, 49, 94), size: 22),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
         title: Text(catName!,
             style: GoogleFonts.poppins(
                 fontSize: 22,
