@@ -9,7 +9,7 @@ import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:http/http.dart' as http;
 
-import '../../uri_links/links.dart';
+import '../../config/app_config.dart';
 import 'quiz_level.dart';
 import 'view_rewards.dart';
 
@@ -66,7 +66,7 @@ class _AnimatedGridScreenState extends State<AnimatedGridScreen> {
   }
 
   Future<void> quizLevel() async {
-    final uri = Uri.parse(getLevels);
+    final uri = Uri.parse(AppConfig.getLevels);
     try {
       final response =
           await http.get(uri, headers: {'Content-Type': 'application/json'});
@@ -250,7 +250,7 @@ class _AnimatedGridScreenState extends State<AnimatedGridScreen> {
                                                       top: Radius.circular(15)),
                                               child: CachedNetworkImage(
                                                 imageUrl:
-                                                    '$baseUri${data[index]['icon']}',
+                                                    '${AppConfig.baseUri}${data[index]['icon']}',
                                                 fit: BoxFit.cover,
                                                 placeholder: (context, url) =>
                                                     Shimmer.fromColors(

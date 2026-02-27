@@ -5,7 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 import 'quiz_page.dart';
-import 'package:signin_language_app/config/dev_config.dart';
+import '../../config/app_config.dart';
 
 class QuizScreen extends StatefulWidget {
   final int levelId;
@@ -26,8 +26,8 @@ class _QuizScreenState extends State<QuizScreen> {
   int? userId;
   int currentQuestionIndex = 0;
 
-  // Base API URL
-  final String baseUrl = 'https://5h44kl7q-8001.inc1.devtunnels.ms/userapp';
+  // Base API URL is now using baseUri from links.dart
+  // Removed hardcoded baseUrl
 
   @override
   void initState() {
@@ -41,8 +41,8 @@ class _QuizScreenState extends State<QuizScreen> {
       userId = prefs.getInt('user_id');
 
       if (userId == null) {
-        if (DevConfig.useDemoMode) {
-          userId = DevConfig.demoUserId;
+        if (AppConfig.useDemoMode) {
+          userId = AppConfig.demoUserId;
         } else {
           setState(() {
             errorMessage = 'User not logged in. Please login first.';
@@ -52,18 +52,19 @@ class _QuizScreenState extends State<QuizScreen> {
         }
       }
 
-      // Create URI with query parameters
-      final uri = Uri.parse(
-              'https://5h44kl7q-8001.inc1.devtunnels.ms/userapp/api/levels/${widget.levelId}/questions/')
-          .replace(queryParameters: {
-        'user_id': userId.toString(),
-      });
+      final token = prefs.getString('jwt_token');
+
+      // Create URI
+      final uri = Uri.parse(AppConfig.getLevelQuestionsUri(widget.levelId));
 
       debugPrint('Request URL: ${uri.toString()}');
 
       final response = await http.get(
         uri,
-        headers: {'Accept': 'application/json'},
+        headers: {
+          'Accept': 'application/json',
+          if (token != null) 'Authorization': 'Bearer $token',
+        },
       );
 
       debugPrint('Response status: ${response.statusCode}');
@@ -72,7 +73,14 @@ class _QuizScreenState extends State<QuizScreen> {
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         setState(() {
-          questions = data['questions'];
+          if (data is List) {
+            questions = data;
+          } else if (data is Map && data.containsKey('questions')) {
+            questions = data['questions'] ?? [];
+          } else {
+            questions = [];
+          }
+          
           for (var q in questions) {
             selectedAnswers[q['id']] = null;
           }
@@ -83,7 +91,7 @@ class _QuizScreenState extends State<QuizScreen> {
       }
     } catch (e) {
       debugPrint('Error loading questions: $e');
-      if (DevConfig.useDemoMode) {
+      if (AppConfig.useDemoMode) {
         // Fallback data for working without backend
         setState(() {
           questions = [
@@ -128,27 +136,36 @@ class _QuizScreenState extends State<QuizScreen> {
   Future<void> _submitAnswers() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final userId = prefs.getInt('user_id');
-      if (userId == null) throw Exception('User not logged in');
+      final token = prefs.getString('jwt_token');
 
-      // Prepare answers payload
-      final answers = questions
-          .map((q) => {
-                'question_id': q['id'],
-                'selected_option': selectedAnswers[q['id']] ??
-                    0, // Default to 0 if not answered
-              })
-          .toList();
+      int correctCount = 0;
+      for (var q in questions) {
+        if (selectedAnswers[q['id']] == q['correct_answer']) {
+          correctCount++;
+        }
+      }
+      int score = questions.isEmpty ? 0 : (correctCount * 100 ~/ questions.length);
 
-      final url = Uri.parse('$baseUrl/api/levels/${widget.levelId}/answers/');
+      // Prepare answers payload according to new spec
+      final payload = {
+        'score': score,
+        'time_taken': 60, // Placeholder
+        'answers': questions.map((q) => {
+          'question_id': q['id'],
+          'answer_id': selectedAnswers[q['id']] ?? 0,
+        }).toList(),
+      };
+
+      final url = Uri.parse(AppConfig.submitLevelAnswersUri(widget.levelId));
 
       final response = await http.post(
         url,
-        headers: {'Content-Type': 'application/json'},
-        body: json.encode({
-          'user_id': userId,
-          'answers': answers,
-        }),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          if (token != null) 'Authorization': 'Bearer $token',
+        },
+        body: json.encode(payload),
       );
 
       if (response.statusCode == 200) {
@@ -159,7 +176,7 @@ class _QuizScreenState extends State<QuizScreen> {
       }
     } catch (e) {
       debugPrint('Error submitting answers: $e');
-      if (DevConfig.useDemoMode) {
+      if (AppConfig.useDemoMode) {
         // Fallback result for working without backend
         _showResultDialog({
           'status': 'passed',
@@ -326,7 +343,7 @@ class _QuizScreenState extends State<QuizScreen> {
                             padding: EdgeInsets.symmetric(vertical: 8),
                             child: CachedNetworkImage(
                               imageUrl:
-                                  'https://417sptdw-8003.inc1.devtunnels.ms${question['image']}',
+                                  '${AppConfig.baseUri}${question['image']}',
                               placeholder: (ctx, url) =>
                                   Center(child: CircularProgressIndicator()),
                               errorWidget: (ctx, url, err) => Icon(Icons.error),
@@ -361,7 +378,7 @@ class _QuizScreenState extends State<QuizScreen> {
                                     if (option['image'] != null)
                                       CachedNetworkImage(
                                         imageUrl:
-                                            'https://417sptdw-8003.inc1.devtunnels.ms${option['image']}',
+                                            '${AppConfig.baseUri}${option['image']}',
                                         width: 60,
                                         height: 60,
                                         placeholder: (ctx, url) => SizedBox(

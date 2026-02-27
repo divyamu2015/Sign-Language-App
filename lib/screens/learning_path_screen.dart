@@ -4,11 +4,12 @@ import 'package:http/http.dart' as http;
 import 'package:google_fonts/google_fonts.dart';
 import 'package:animate_do/animate_do.dart';
 import 'quiz_screen/premium_quiz_screen.dart';
-import '../uri_links/links.dart';
+import '../config/app_config.dart';
 import 'home_screen.dart';
 import 'pratice_screen/practice_home.dart';
-import 'package:signin_language_app/config/dev_config.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'profile_manage.dart';
+import 'lessons.dart';
 
 class LearningPathScreen extends StatefulWidget {
   final String title;
@@ -30,6 +31,14 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
   List<dynamic> _lessons = [];
   bool _isLoading = true;
   int _selectedNavIndex = 0;
+  int _completedIndex = 0; // Tracks real progress
+
+  Future<void> _loadProgress() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _completedIndex = prefs.getInt('cat_progress_${widget.categoryId}') ?? 0;
+    });
+  }
 
   void _onNavTapped(int index) {
     if (index == _selectedNavIndex && index == 0) return;
@@ -64,12 +73,27 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
   @override
   void initState() {
     super.initState();
+    _loadProgress();
     _fetchLessons();
   }
 
   Future<void> _fetchLessons() async {
+    setState(() {
+      _isLoading = true;
+    });
     try {
-      final response = await http.get(Uri.parse('${baseUri}userapp/categories/${widget.categoryId}/lessons/'));
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('jwt_token');
+      
+      final response = await http.get(
+        Uri.parse(AppConfig.getLessonsUri(widget.categoryId)),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          if (token != null) 'Authorization': 'Bearer $token',
+        },
+      );
+      
       if (response.statusCode == 200) {
         setState(() {
           _lessons = jsonDecode(response.body);
@@ -80,7 +104,7 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
       }
     } catch (e) {
       debugPrint('Error fetching lessons: $e');
-      if (DevConfig.useDemoMode) {
+      if (AppConfig.useDemoMode) {
         // Fallback data for working without backend
         setState(() {
           if (widget.title.toLowerCase().contains('alphabet')) {
@@ -110,38 +134,52 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF7F8F6),
-      body: SafeArea(
-        child: Stack(
-          children: [
-            Column(
-              children: [
-                _buildHeader(),
-                Expanded(
-                  child: _isLoading 
-                    ? const Center(child: CircularProgressIndicator(color: Color(0xFF6DE00F)))
-                    : SingleChildScrollView(
-                    physics: const BouncingScrollPhysics(),
-                    padding: const EdgeInsets.symmetric(vertical: 40),
-                    child: Stack(
-                      alignment: Alignment.topCenter,
-                      children: [
-                        _buildPathLine(),
-                        _buildNodes(),
-                      ],
+      appBar: AppBar(
+        title: Text(widget.title, style: GoogleFonts.lexend(fontWeight: FontWeight.bold, color: const Color(0xFF0F172A))),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        centerTitle: true,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Color(0xFF0F172A)),
+          onPressed: () => Navigator.pop(context),
+        ),
+      ),
+      body: RefreshIndicator(
+        onRefresh: _fetchLessons,
+        color: const Color(0xFF36E27B),
+        child: SafeArea(
+          child: Stack(
+            children: [
+              Column(
+                children: [
+                  _buildHeaderContent(), // This now contains the streak, XP, and progress bar
+                  Expanded(
+                    child: _isLoading 
+                      ? const Center(child: CircularProgressIndicator(color: Color(0xFF6DE00F)))
+                      : SingleChildScrollView(
+                      physics: const BouncingScrollPhysics(),
+                      padding: const EdgeInsets.symmetric(vertical: 40),
+                      child: Stack(
+                        alignment: Alignment.topCenter,
+                        children: [
+                          _buildPathLine(),
+                          _buildNodes(),
+                        ],
+                      ),
                     ),
                   ),
-                ),
-                _buildBottomNav(),
-              ],
-            ),
-            _buildDecorativeElements(),
-          ],
+                  _buildBottomNav(),
+                ],
+              ),
+              _buildDecorativeElements(),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeaderContent() {
     return Container(
       padding: const EdgeInsets.fromLTRB(24, 16, 24, 20),
       decoration: BoxDecoration(
@@ -155,11 +193,6 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
             children: [
               Row(
                 children: [
-                  IconButton(
-                    icon: const Icon(Icons.arrow_back_ios_new_rounded,
-                        color: Color(0xFF182210), size: 22),
-                    onPressed: () => Navigator.of(context).pop(),
-                  ),
                   const Icon(Icons.local_fire_department_rounded,
                       color: Color(0xFF6DE00F), size: 32),
                   const SizedBox(width: 8),
@@ -204,7 +237,7 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
                         fontSize: 24, fontWeight: FontWeight.bold),
                   ),
                   Text(
-                    '${((_lessons.where((l) => _lessons.indexOf(l) < 1).length / (_lessons.isEmpty ? 1 : _lessons.length)) * 100).toInt()}% Complete',
+                    '${((_completedIndex / (_lessons.isEmpty ? 1 : _lessons.length)) * 100).toInt()}% Complete',
                     style: GoogleFonts.spaceGrotesk(
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
@@ -219,8 +252,7 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
                 child: LinearProgressIndicator(
                   value: _lessons.isEmpty
                       ? 0
-                      : (_lessons.where((l) => _lessons.indexOf(l) < 1).length /
-                          _lessons.length),
+                      : (_completedIndex / _lessons.length),
                   backgroundColor: const Color(0xFFE2E8F0),
                   valueColor: const AlwaysStoppedAnimation(Color(0xFF6DE00F)),
                   minHeight: 12,
@@ -268,30 +300,51 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
           if (cycle == 3) offset = 40;
           // 0 and 2 are middle
 
-          // Progression Logic
-          bool isCompleted = index < 1; 
-          bool isActive = index == 1;
-          bool isLocked = index > 1;
+          // Progression Logic based on local storage
+          bool isCompleted = index < _completedIndex; 
+          bool isActive = index == _completedIndex;
+          bool isLocked = index > _completedIndex;
 
-          String nodeText = lesson['name'] ?? '';
-          bool isAlphabet = nodeText.length == 1;
+          String nodeText = lesson['name'] ?? lesson['lesson_name'] ?? '';
+          String label = nodeText;
+          String bubbleDisplay = '';
+
+          // If it's a single letter (Alphabet path)
+          if (nodeText.length == 1) {
+            bubbleDisplay = nodeText;
+            label = "Letter $nodeText";
+          } else if (nodeText.toLowerCase().contains('letter ') && nodeText.length <= 8) {
+            // "Letter A" -> "A"
+            bubbleDisplay = nodeText.split(' ').last;
+          } else {
+            // Default to empty so the play icon shows, or use first char?
+            // Let's use first char if it's a short word, else empty (arrow fallback)
+            if (nodeText.isNotEmpty && nodeText.length <= 3) bubbleDisplay = nodeText;
+          }
 
           return Column(
             children: [
               _buildPathNode(
-                label: isAlphabet ? "Letter $nodeText" : (lesson['name'] ?? 'Lesson'),
-                bubbleContent: nodeText,
+                label: label,
+                bubbleContent: bubbleDisplay,
                 isActive: isActive,
                 isCompleted: isCompleted,
                 isLocked: isLocked,
                 offset: offset,
-                onTap: () {
-                  Navigator.push(
+                onTap: () async {
+                  final result = await Navigator.push(
                     context,
                     MaterialPageRoute(
-                        builder: (_) => PremiumQuizScreen(
-                            levelId: lesson['id'], userId: widget.userId)),
+                        builder: (_) => LessonPage(
+                            catId: widget.categoryId, 
+                            catName: widget.title,
+                            initialIndex: index,
+                        )),
                   );
+                  // Refresh progress when coming back
+                  if (result == true || result == null) {
+                    _loadProgress();
+                  }
                 },
               ),
               const SizedBox(height: 50),
@@ -375,18 +428,38 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
                       ],
                     ),
                     child: Center(
-                      child: isLocked
-                          ? const Icon(Icons.lock_rounded, color: Color(0xFF94A3B8), size: 32)
-                          : isCompleted
-                              ? const Icon(Icons.check_rounded, color: Colors.white, size: 48, weight: 1000)
-                              : Text(
-                                  bubbleContent,
-                                  style: GoogleFonts.spaceGrotesk(
-                                    color: Colors.white, 
-                                    fontSize: bubbleContent.length > 2 ? 18 : 42, 
-                                    fontWeight: FontWeight.bold
-                                  ),
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          if (bubbleContent.isNotEmpty)
+                            Text(
+                              bubbleContent,
+                              style: GoogleFonts.spaceGrotesk(
+                                color: isLocked ? Colors.white.withOpacity(0.3) : Colors.white, 
+                                fontSize: bubbleContent.length > 2 ? 18 : 42, 
+                                fontWeight: FontWeight.bold
+                              ),
+                            ),
+                          if (isLocked)
+                            Icon(Icons.lock_rounded, 
+                                color: Colors.white.withOpacity(0.8), 
+                                size: bubbleContent.isNotEmpty ? 24 : 32)
+                          else if (isCompleted)
+                            Transform.translate(
+                              offset: const Offset(15, 15),
+                              child: Container(
+                                padding: const EdgeInsets.all(4),
+                                decoration: const BoxDecoration(
+                                  color: Colors.white,
+                                  shape: BoxShape.circle,
                                 ),
+                                child: const Icon(Icons.check_rounded, color: Color(0xFFFBBF24), size: 16, weight: 1000),
+                              ),
+                            )
+                          else if (bubbleContent.isEmpty)
+                            const Icon(Icons.play_arrow_rounded, color: Colors.white, size: 48),
+                        ],
+                      ),
                     ),
                   ),
                 ],
@@ -395,8 +468,9 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
             const SizedBox(height: 12),
             Text(
               label,
+              textAlign: TextAlign.center,
               style: GoogleFonts.spaceGrotesk(
-                fontSize: 16,
+                fontSize: 14,
                 fontWeight: FontWeight.bold,
                 color: isLocked ? const Color(0xFF94A3B8) : (isActive ? const Color(0xFF8B5CF6) : const Color(0xFFFBBF24)),
               ),

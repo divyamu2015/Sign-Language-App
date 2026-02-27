@@ -52,6 +52,7 @@ dependencies:
   shared_preferences: ^2.5.3
   audioplayers: ^6.4.0
   lottie: ^3.2.0
+  flutter_dotenv: ^5.1.0
 
 dev_dependencies:
   flutter_test:
@@ -78,8 +79,7 @@ flutter:
 
   assets:
     - assets/images/
-    - assets/videos/istockphoto-2202262964-640_adpp_is.mp4
-    - assets/videos/practice.mp4
+    - .env
     - assets/videos/alphabetics.mp4
     - assets/videos/numbers.mp4
 

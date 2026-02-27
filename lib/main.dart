@@ -6,7 +6,11 @@ import 'authentication_screen/signup_screen/bloc/signup_bloc.dart';
 import 'screens/splash_screen.dart';
 //import 'screens/splash_screen.dart';
 
-void main() {
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await dotenv.load(fileName: ".env");
   runApp(const MyApp());
 }
 

@@ -4,7 +4,7 @@ import 'package:glassmorphism/glassmorphism.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:animate_do/animate_do.dart';
 import 'package:http/http.dart' as http;
-import '../../../uri_links/links.dart';
+import '../../../config/app_config.dart';
 import '../../lessons.dart';
 
 class CategoryScreen extends StatefulWidget {
@@ -28,7 +28,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
   }
 
   Future<void> getCategory() async {
-    final uri = Uri.parse(categoryView);
+    final uri = Uri.parse(AppConfig.categoryView);
     try {
       final response =
           await http.get(uri, headers: {'Content-Type': 'application/json'});
@@ -82,12 +82,12 @@ class _CategoryScreenState extends State<CategoryScreen> {
                       return FadeInUp(
                         duration: Duration(milliseconds: 500 + (index * 100)),
                         child: CategoryCard(
-                          id: data[index]['id'],
-                          categoryName: data[index]['name'],
+                          id: data[index]['id'] ?? 0,
+                          categoryName: data[index]['title'] ?? data[index]['name'] ?? 'Category',
                           imageWidget: ClipRRect(
                             borderRadius: BorderRadius.circular(8),
                             child: Image.network(
-                              "$baseUri${data[index]['image']}",
+                              "${AppConfig.baseUri}${data[index]['icon_url'] ?? data[index]['image'] ?? ''}",
                               fit: BoxFit.cover,
                               errorBuilder: (context, error, stackTrace) =>
                                   const Icon(Icons.error, color: Colors.red),

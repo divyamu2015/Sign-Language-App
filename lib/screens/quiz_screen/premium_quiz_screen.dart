@@ -6,7 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:animate_do/animate_do.dart';
-import '../../uri_links/links.dart';
+import '../../config/app_config.dart';
 
 class PremiumQuizScreen extends StatefulWidget {
   final int levelId;
@@ -60,23 +60,77 @@ class _PremiumQuizScreenState extends State<PremiumQuizScreen> {
   }
 
   Future<void> _fetchQuestions() async {
-    final uri = Uri.parse('${baseUri}userapp/api/levels/${widget.levelId}/questions/').replace(queryParameters: {
-      'user_id': _userId.toString(),
-    });
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('jwt_token');
 
-    final response = await http.get(uri);
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      setState(() {
-        _questions = data['questions'];
-        _isLoading = false;
-      });
-    } else {
-      setState(() {
-        _errorMessage = 'Failed to load questions';
-        _isLoading = false;
-      });
+      final response = await http.get(
+        Uri.parse(AppConfig.getLevelQuestionsUri(widget.levelId)),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          if (token != null) 'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        setState(() {
+          if (data is List) {
+            _questions = data;
+          } else if (data is Map && data.containsKey('questions')) {
+            _questions = data['questions'] ?? [];
+          } else {
+            _questions = [];
+          }
+          _isLoading = false;
+        });
+      } else {
+        throw Exception('Failed to load questions: ${response.statusCode}');
+      }
+    } catch (e) {
+      debugPrint('Error fetching questions: $e');
+      if (AppConfig.useDemoMode) {
+        _loadFallbackQuestions();
+      } else {
+        setState(() {
+          _errorMessage = 'Error: $e';
+          _isLoading = false;
+        });
+      }
     }
+  }
+
+  void _loadFallbackQuestions() {
+    setState(() {
+      _questions = [
+        {
+          "id": 1,
+          "text": "Identify this ASL sign",
+          "image": null,
+          "correct_answer": 1,
+          "options": [
+            {"id": 1, "text": "Letter A"},
+            {"id": 2, "text": "Letter B"},
+            {"id": 3, "text": "Letter C"},
+            {"id": 4, "text": "Letter D"}
+          ]
+        },
+        {
+          "id": 2,
+          "text": "What does this represent?",
+          "image": null,
+          "correct_answer": 2,
+          "options": [
+            {"id": 1, "text": "Apple"},
+            {"id": 2, "text": "Hello"},
+            {"id": 3, "text": "Help"},
+            {"id": 4, "text": "Please"}
+          ]
+        }
+      ];
+      _isLoading = false;
+    });
   }
 
   void _handleOptionTap(int optionId, bool isThisCorrect) {
@@ -106,15 +160,59 @@ class _PremiumQuizScreenState extends State<PremiumQuizScreen> {
   }
 
   Future<void> _submitQuiz() async {
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (context) => QuizSuccessScreen(
-          score: _score,
-          totalQuestions: _questions.length,
+    try {
+      setState(() => _isLoading = true);
+      
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('jwt_token');
+
+      // Note: In a real app, you'd track time and individual answers.
+      // Here we provide a simplified payload based on the spec.
+      final payload = {
+        "score": _score,
+        "time_taken": 60, // Dummy value
+        "answers": [] // Tracked answers could go here
+      };
+
+      final response = await http.post(
+        Uri.parse(AppConfig.submitLevelAnswersUri(widget.levelId)),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          if (token != null) 'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode(payload),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        debugPrint('Submission success: $data');
+      }
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => QuizSuccessScreen(
+            score: _score,
+            totalQuestions: _questions.length,
+          ),
         ),
-      ),
-    );
+      );
+    } catch (e) {
+      debugPrint('Error submitting quiz: $e');
+      // Navigate anyway for better UX in this version
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => QuizSuccessScreen(
+            score: _score,
+            totalQuestions: _questions.length,
+          ),
+        ),
+      );
+    } finally {
+      setState(() => _isLoading = false);
+    }
   }
 
   @override
@@ -258,7 +356,7 @@ class _PremiumQuizScreenState extends State<PremiumQuizScreen> {
           ),
         ],
         image: imageUrl != null && imageUrl.isNotEmpty ? DecorationImage(
-          image: NetworkImage(imageUrl.startsWith('http') ? imageUrl : '${baseUri.substring(0, baseUri.length - 1)}$imageUrl'),
+          image: NetworkImage(imageUrl.startsWith('http') ? imageUrl : '${AppConfig.baseUri}${imageUrl.startsWith('/') ? imageUrl : '/$imageUrl'}'),
           fit: BoxFit.cover,
         ) : null,
       ),

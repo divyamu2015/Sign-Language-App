@@ -1,9 +1,11 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:google_fonts/google_fonts.dart';
+import 'package:animate_do/animate_do.dart';
 
-import 'home_screen.dart';
-import 'package:signin_language_app/config/dev_config.dart';
+import 'home_screen.dart'; // To reuse ClayContainer and AppColors
+import '../config/app_config.dart';
 
 class UserProfManage extends StatefulWidget {
   const UserProfManage({super.key, this.userId = 0});
@@ -16,6 +18,7 @@ class UserProfManage extends StatefulWidget {
 class _UserProfManageState extends State<UserProfManage> {
   final _formKey = GlobalKey<FormState>();
   bool isEditing = false;
+  bool isLoading = true;
 
   String name = "", email = "", phone = "";
   final TextEditingController addressController = TextEditingController();
@@ -28,33 +31,36 @@ class _UserProfManageState extends State<UserProfManage> {
   }
 
   Future<void> fetchUserProfile() async {
-    final uri = Uri.parse(
-        'https://5h44kl7q-8001.inc1.devtunnels.ms/userapp/view_profile/${widget.userId}/');
+    final uri = Uri.parse(AppConfig.viewProfileUri(widget.userId));
     try {
       final response = await http.get(uri);
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        setState(() {
-          name = data['username'] ?? '';
-          email = data['email'] ?? '';
-          phone = data['phone'] ?? '';
-          addressController.text = data['address'] ?? '';
-          placeController.text = data['place'] ?? '';
-        });
+        if (mounted) {
+          setState(() {
+            name = data['username'] ?? '';
+            email = data['email'] ?? '';
+            phone = data['phone'] ?? '';
+            addressController.text = data['address'] ?? '';
+            placeController.text = data['place'] ?? '';
+            isLoading = false;
+          });
+        }
       } else {
         throw ('Failed to fetch user profile');
       }
     } catch (e) {
-      print('Exception: $e');
-      if (DevConfig.useDemoMode) {
-        // Fallback data for working without backend
-        setState(() {
-          name = DevConfig.demoUserName;
-          email = "demo@example.com";
-          phone = "+1 234 567 890";
-          addressController.text = "123 Sign Street";
-          placeController.text = "Hand City";
-        });
+      if (AppConfig.useDemoMode) {
+        if (mounted) {
+          setState(() {
+            name = AppConfig.demoUserName;
+            email = "demo@example.com";
+            phone = "+1 234 567 890";
+            addressController.text = "123 Sign Street";
+            placeController.text = "Hand City";
+            isLoading = false;
+          });
+        }
       }
     }
   }
@@ -67,8 +73,8 @@ class _UserProfManageState extends State<UserProfManage> {
 
   void saveProfile() async {
     if (_formKey.currentState!.validate()) {
-      final uri = Uri.parse(
-          'https://5h44kl7q-8001.inc1.devtunnels.ms/userapp/profile/update/${widget.userId}/');
+      setState(() => isLoading = true);
+      final uri = Uri.parse(AppConfig.updateProfileUri(widget.userId));
 
       final updatedData = {
         "username": name,
@@ -86,133 +92,198 @@ class _UserProfManageState extends State<UserProfManage> {
         );
 
         if (response.statusCode == 200) {
-          print("Profile updated");
-          setState(() => isEditing = false);
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Profile updated successfully!")),
-          );
-        } else {
-          throw ('Failed to update profile');
+          if (mounted) {
+            setState(() {
+              isEditing = false;
+              isLoading = false;
+            });
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text("Profile updated successfully!")),
+            );
+          }
         }
       } catch (e) {
-        print('Exception: $e');
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Error: ${e.toString()}")),
-        );
+        if (mounted) {
+          setState(() => isLoading = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("Error: ${e.toString()}")),
+          );
+        }
       }
     }
   }
 
-  InputDecoration _inputDecoration(String label) {
-    return InputDecoration(
-      labelText: label,
-      labelStyle: const TextStyle(color: Colors.black),
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-      enabledBorder: OutlineInputBorder(
-        borderSide: const BorderSide(color: Colors.grey),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderSide: const BorderSide(color: Colors.blue),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      filled: true,
-      fillColor: Colors.white,
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: Scaffold(
-        backgroundColor: const Color(0xFFF5F5F5), // light background
-        appBar: AppBar(
-          leading: IconButton(
-              onPressed: () => Navigator.of(context).pop(),
-              icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 22)),
-          backgroundColor: const Color.fromARGB(255, 208, 150, 231),
-          title: const Text("Profile Management"),
-          actions: [
-            IconButton(
-              icon: Icon(isEditing ? Icons.save : Icons.edit),
-              onPressed: isEditing ? saveProfile : toggleEdit,
-            ),
-          ],
-        ),
-        body: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Form(
-            key: _formKey,
-            child: SingleChildScrollView(
-              child: Column(
-                children: [
-                  TextFormField(
-                    initialValue: name,
-                    decoration: _inputDecoration(name),
-                    enabled: false,
-                    style: const TextStyle(color: Colors.black),
-                  ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    initialValue: email,
-                    decoration: _inputDecoration(email),
-                    enabled: false,
-                    style: const TextStyle(color: Colors.black),
-                  ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    initialValue: phone,
-                    decoration: _inputDecoration(phone),
-                    enabled: false,
-                    style: const TextStyle(color: Colors.black),
-                  ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: addressController,
-                    decoration: _inputDecoration("Address"),
-                    maxLines: 3,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return "Address cannot be empty";
-                      }
-                      return null;
-                    },
-                    enabled: isEditing,
-                    style: const TextStyle(color: Colors.black),
-                  ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: placeController,
-                    decoration: _inputDecoration("Place"),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return "Place cannot be empty";
-                      }
-                      return null;
-                    },
-                    enabled: isEditing,
-                    style: const TextStyle(color: Colors.black),
-                  ),
-                  const SizedBox(height: 24),
-                  if (isEditing)
-                    ElevatedButton.icon(
-                      onPressed: saveProfile,
-                      icon: const Icon(Icons.save),
-                      label: const Text("Save"),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.teal,
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 24, vertical: 12),
-                        textStyle: const TextStyle(fontSize: 16),
-                      ),
-                    ),
-                ],
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: Padding(
+          padding: const EdgeInsets.only(left: 16),
+          child: Center(
+            child: GestureDetector(
+              onTap: () => Navigator.pop(context),
+              child: ClayContainer(
+                width: 44,
+                height: 44,
+                borderRadius: 14,
+                spread: 2,
+                child: const Icon(Icons.arrow_back_rounded, color: AppColors.textPrimary, size: 20),
               ),
             ),
           ),
         ),
+        title: Text(
+          'Profile',
+          style: GoogleFonts.lexend(
+            fontWeight: FontWeight.w900,
+            fontSize: 22,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        centerTitle: true,
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 16),
+            child: Center(
+              child: GestureDetector(
+                onTap: isEditing ? saveProfile : toggleEdit,
+                child: ClayContainer(
+                  width: 44,
+                  height: 44,
+                  borderRadius: 14,
+                  color: isEditing ? AppColors.primary : AppColors.surface,
+                  spread: 2,
+                  child: Icon(
+                    isEditing ? Icons.check_rounded : Icons.edit_rounded, 
+                    color: isEditing ? Colors.white : AppColors.textPrimary, 
+                    size: 20
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
+      body: isLoading 
+        ? const Center(child: CircularProgressIndicator())
+        : ListView(
+            padding: const EdgeInsets.all(24),
+            children: [
+              FadeInDown(
+                child: Center(
+                  child: Stack(
+                    children: [
+                      ClayContainer(
+                        width: 120,
+                        height: 120,
+                        borderRadius: 60,
+                        spread: 4,
+                        child: const Center(
+                          child: Icon(Icons.person_rounded, size: 60, color: AppColors.clayShadow),
+                        ),
+                      ),
+                      if (isEditing)
+                        Positioned(
+                          bottom: 0,
+                          right: 0,
+                          child: ClayContainer(
+                            width: 36,
+                            height: 36,
+                            borderRadius: 18,
+                            color: AppColors.primary,
+                            child: const Icon(Icons.camera_alt_rounded, size: 18, color: Colors.white),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 32),
+              FadeInUp(
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    children: [
+                      _buildProfileField('Full Name', name, Icons.person_outline_rounded, false),
+                      const SizedBox(height: 20),
+                      _buildProfileField('Email Address', email, Icons.email_outlined, false),
+                      const SizedBox(height: 20),
+                      _buildProfileField('Phone Number', phone, Icons.phone_android_rounded, false),
+                      const SizedBox(height: 20),
+                      _buildEditableField('Home Address', addressController, Icons.home_work_outlined, true),
+                      const SizedBox(height: 20),
+                      _buildEditableField('Place', placeController, Icons.location_on_outlined, false),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+    );
+  }
+
+  Widget _buildProfileField(String label, String value, IconData icon, bool enabled) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 8, bottom: 8),
+          child: Text(label, style: GoogleFonts.lexend(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.textSecondary)),
+        ),
+        ClayContainer(
+          height: 60,
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          borderRadius: 16,
+          isInner: true,
+          child: Row(
+            children: [
+              Icon(icon, color: AppColors.textSecondary, size: 20),
+              const SizedBox(width: 16),
+              Text(value, style: GoogleFonts.lexend(fontSize: 16, color: AppColors.textPrimary.withOpacity(0.6))),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildEditableField(String label, TextEditingController controller, IconData icon, bool isMultiLine) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 8, bottom: 8),
+          child: Text(label, style: GoogleFonts.lexend(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.textSecondary)),
+        ),
+        ClayContainer(
+          height: isMultiLine ? 100 : 60,
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          borderRadius: 16,
+          isInner: isEditing,
+          child: Row(
+            crossAxisAlignment: isMultiLine ? CrossAxisAlignment.start : CrossAxisAlignment.center,
+            children: [
+              Padding(
+                padding: EdgeInsets.only(top: isMultiLine ? 18 : 0),
+                child: Icon(icon, color: isEditing ? AppColors.primary : AppColors.textSecondary, size: 20),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: TextField(
+                  controller: controller,
+                  enabled: isEditing,
+                  maxLines: isMultiLine ? 3 : 1,
+                  style: GoogleFonts.lexend(fontSize: 16, color: AppColors.textPrimary),
+                  decoration: const InputDecoration(border: InputBorder.none),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

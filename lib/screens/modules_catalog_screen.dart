@@ -4,7 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:google_fonts/google_fonts.dart';
 import 'package:animate_do/animate_do.dart';
 
-import '../uri_links/links.dart';
+import '../config/app_config.dart';
 
 import 'home_screen.dart';
 import 'home_page/alphabetics_page.dart';
@@ -14,6 +14,7 @@ import 'pratice_screen/practice_home.dart';
 import 'quiz_screen/quiz_page.dart';
 import 'profile_manage.dart';
 import 'learning_path_screen.dart';
+import 'lessons.dart';
 
 // ─── Color Palette ───────────────────────────────────────────────────────────
 class _CatalogColors {
@@ -84,26 +85,26 @@ class _ModulesCatalogScreenState extends State<ModulesCatalogScreen> {
 
   Future<void> _fetchCategories() async {
     try {
-      final response = await http.get(Uri.parse(categoryView));
+      final response = await http.get(Uri.parse(AppConfig.categoryView));
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
         setState(() {
           _allModules = data.asMap().entries.map((entry) {
             int index = entry.key;
             var cat = entry.value;
-            String title = cat['category_name'] ?? 'Module';
+            String title = cat['category_name'] ?? cat['name'] ?? cat['title'] ?? cat['display_name'] ?? 'Module';
+            String subtitle = cat['description'] ?? cat['subtitle'] ?? 'Learn sign language';
             return _ModuleData(
               title: title,
-              subtitle: cat['description'] ?? 'Learn sign language',
+              subtitle: subtitle,
               icon: _getIconForCategory(title),
               color: _getColorForCategory(index),
               progress: (index == 0) ? 0.85 : (index == 1) ? 0.40 : null,
               onTap: () => Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => LearningPathScreen(
-                  title: '$title Path',
-                  categoryId: cat['id'],
-                  userId: widget.userId,
+                MaterialPageRoute(builder: (_) => LessonPage(
+                  catName: title,
+                  catId: cat['id'],
                 )),
               ),
             );
@@ -178,57 +179,63 @@ class _ModulesCatalogScreenState extends State<ModulesCatalogScreen> {
     return Scaffold(
       backgroundColor: _CatalogColors.backgroundLight,
       body: SafeArea(
-        child: Stack(
-          children: [
-            CustomScrollView(
-              physics: const BouncingScrollPhysics(),
-              slivers: [
-                // ─── Header ────────────────────────────────────────
-                SliverToBoxAdapter(child: _buildHeader()),
-                // ─── Search + Filters ──────────────────────────────
-                SliverToBoxAdapter(child: _buildSearchAndFilters()),
-                // ─── Module Grid ───────────────────────────────────
-                SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 120),
-                  sliver: _isLoading 
-                    ? const SliverToBoxAdapter(
-                        child: Center(child: Padding(
-                          padding: EdgeInsets.only(top: 100),
-                          child: CircularProgressIndicator(color: _CatalogColors.primary),
-                        )),
-                      )
-                    : SliverGrid(
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      mainAxisSpacing: 14,
-                      crossAxisSpacing: 14,
-                      childAspectRatio: 0.92,
-                    ),
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) {
-                        final module = _filteredModules[index];
-                        return FadeInUp(
-                          delay: Duration(milliseconds: 100 + (index * 80)),
-                          duration: const Duration(milliseconds: 500),
-                          child: module.isLocked
-                              ? _LockedModuleTile(module: module)
-                              : _ModuleTile(module: module),
-                        );
-                      },
-                      childCount: _filteredModules.length,
-                    ),
+        child: RefreshIndicator(
+          onRefresh: _fetchCategories,
+          color: _CatalogColors.primary,
+          child: Stack(
+            children: [
+              CustomScrollView(
+                physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+                slivers: [
+                  // ─── Header ────────────────────────────────────────
+                  SliverToBoxAdapter(child: _buildHeader()),
+                  // ─── Search + Filters ──────────────────────────────
+                  SliverToBoxAdapter(child: _buildSearchAndFilters()),
+                  // ─── Module Grid ───────────────────────────────────
+                  SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 120),
+                    sliver: _isLoading 
+                      ? const SliverToBoxAdapter(
+                          child: Center(
+                            child: Padding(
+                              padding: EdgeInsets.only(top: 100),
+                              child: CircularProgressIndicator(color: _CatalogColors.primary),
+                            ),
+                          ),
+                        )
+                      : SliverGrid(
+                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            mainAxisSpacing: 14,
+                            crossAxisSpacing: 14,
+                            childAspectRatio: 0.92,
+                          ),
+                          delegate: SliverChildBuilderDelegate(
+                            (context, index) {
+                              final module = _filteredModules[index];
+                              return FadeInUp(
+                                delay: Duration(milliseconds: 100 + (index * 80)),
+                                duration: const Duration(milliseconds: 500),
+                                child: module.isLocked
+                                    ? _LockedModuleTile(module: module)
+                                    : _ModuleTile(module: module),
+                              );
+                            },
+                            childCount: _filteredModules.length,
+                          ),
+                        ),
                   ),
-                ),
-              ],
-            ),
-            // ─── Bottom Nav ────────────────────────────────────────
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: 0,
-              child: _buildBottomNav(),
-            ),
-          ],
+                ],
+              ),
+              // ─── Bottom Nav ────────────────────────────────────────
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: _buildBottomNav(),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -278,12 +285,16 @@ class _ModulesCatalogScreenState extends State<ModulesCatalogScreen> {
                 ),
               ],
             ),
-            // Search button
-            _CircleButton(
-              icon: Icons.search_rounded,
-              onTap: () {
-                // Focus on the search field
-              },
+            // Actions
+            Row(
+              children: [
+                _CircleButton(
+                  icon: Icons.search_rounded,
+                  onTap: () {
+                    // Focus on the search field
+                  },
+                ),
+              ],
             ),
           ],
         ),

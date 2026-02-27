@@ -347,7 +347,6 @@ class _SubCategoryPageState extends State<SubCategoryPage> {
             ),
           ),
         ),
-        ),
         bottomNavigationBar: _buildBottomNav(),
       ),
     );

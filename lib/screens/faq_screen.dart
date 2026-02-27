@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import '../config/app_config.dart';
 
 class FAQScreen extends StatefulWidget {
   const FAQScreen({super.key});
@@ -21,7 +22,7 @@ class _FAQScreenState extends State<FAQScreen> {
 
   Future<void> fetchFAQs() async {
     final uri =
-        Uri.parse('https://5h44kl7q-8001.inc1.devtunnels.ms/userapp/faqs/');
+        Uri.parse('${AppConfig.baseUri}/userapp/faqs/');
     try {
       final response = await http.get(uri);
       if (response.statusCode == 200) {

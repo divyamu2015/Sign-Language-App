@@ -1,7 +1,3 @@
-// To parse this JSON data, do
-//
-//     final userRegModel = userRegModelFromJson(jsonString);
-
 import 'dart:convert';
 
 UserRegModel userRegModelFromJson(String str) => UserRegModel.fromJson(json.decode(str));
@@ -9,57 +5,49 @@ UserRegModel userRegModelFromJson(String str) => UserRegModel.fromJson(json.deco
 String userRegModelToJson(UserRegModel data) => json.encode(data.toJson());
 
 class UserRegModel {
-    String status;
-    String message;
-    Data data;
+    String? token;
+    RegUser? user;
+    String? error;
 
     UserRegModel({
-        required this.status,
-        required this.message,
-        required this.data,
+        this.token,
+        this.user,
+        this.error,
     });
 
     factory UserRegModel.fromJson(Map<String, dynamic> json) => UserRegModel(
-        status: json["status"],
-        message: json["message"],
-        data: Data.fromJson(json["data"]),
+        token: json["token"],
+        user: json["user"] != null ? RegUser.fromJson(json["user"]) : null,
+        error: json["error"],
     );
 
     Map<String, dynamic> toJson() => {
-        "status": status,
-        "message": message,
-        "data": data.toJson(),
+        "token": token,
+        "user": user?.toJson(),
+        "error": error,
     };
 }
 
-class Data {
-    int id;
-    String username;
-    String email;
-    String phone;
-    String password;
+class RegUser {
+    int? id;
+    String? name;
+    String? email;
 
-    Data({
-        required this.id,
-        required this.username,
-        required this.email,
-        required this.phone,
-        required this.password,
+    RegUser({
+        this.id,
+        this.name,
+        this.email,
     });
 
-    factory Data.fromJson(Map<String, dynamic> json) => Data(
+    factory RegUser.fromJson(Map<String, dynamic> json) => RegUser(
         id: json["id"],
-        username: json["username"],
+        name: json["name"],
         email: json["email"],
-        phone: json["phone"],
-        password: json["password"],
     );
 
     Map<String, dynamic> toJson() => {
         "id": id,
-        "username": username,
+        "name": name,
         "email": email,
-        "phone": phone,
-        "password": password,
     };
 }

@@ -1,7 +1,9 @@
 import 'package:animate_do/animate_do.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
-import 'introduction_screen.dart';
+import 'home_screen.dart';
+import '../config/app_config.dart';
+import '../authentication_screen/login_screen/login_view/login_page.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -14,9 +16,17 @@ class SplashScreenState extends State<SplashScreen> {
   void initState() {
     super.initState();
     Timer(const Duration(seconds: 3), () {
+      Widget nextScreen;
+      if (AppConfig.useDemoMode) {
+        nextScreen = const HomeScreen(
+            userId: AppConfig.demoUserId, userName: AppConfig.demoUserName);
+      } else {
+        nextScreen = const LoginPage();
+      }
+
       Navigator.of(context).pushReplacement(
         PageRouteBuilder(
-          pageBuilder: (context, animation, secondaryAnimation) => const OnboardingScreen(),
+          pageBuilder: (context, animation, secondaryAnimation) => nextScreen,
           transitionsBuilder: (context, animation, secondaryAnimation, child) {
             return FadeTransition(opacity: animation, child: child);
           },
