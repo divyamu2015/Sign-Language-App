@@ -12,6 +12,7 @@ import 'home_page/alphabetics_page.dart';
 import 'pratice_screen/practice_home.dart';
 import 'profile_manage.dart';
 import 'quiz_screen/quiz_page.dart';
+import 'ai_camera_screen.dart';
 
 // Import QuizPage
 
@@ -386,12 +387,9 @@ class _SubCategoryPageState extends State<SubCategoryPage> {
             // Camera FAB
             GestureDetector(
               onTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('AI Camera coming soon!', style: GoogleFonts.lexend()),
-                    behavior: SnackBarBehavior.floating,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const AiCameraScreen()),
                 );
               },
               child: Transform.translate(

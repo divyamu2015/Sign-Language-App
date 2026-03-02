@@ -10,6 +10,7 @@ import 'pratice_screen/practice_home.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'profile_manage.dart';
 import 'lessons.dart';
+import 'ai_camera_screen.dart';
 
 class LearningPathScreen extends StatefulWidget {
   final String title;
@@ -96,7 +97,16 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
       
       if (response.statusCode == 200) {
         setState(() {
-          _lessons = jsonDecode(response.body);
+          final data = jsonDecode(response.body);
+          if (data is List) {
+            _lessons = data;
+          } else if (data is Map && data.containsKey('lessons')) {
+            _lessons = data['lessons'] ?? [];
+          } else if (data is Map && data.containsKey('results')) {
+            _lessons = data['results'] ?? [];
+          } else {
+            _lessons = [];
+          }
           _isLoading = false;
         });
       } else {
@@ -515,12 +525,9 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
             // Camera FAB
             GestureDetector(
               onTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('AI Camera coming soon!', style: GoogleFonts.lexend()),
-                    behavior: SnackBarBehavior.floating,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const AiCameraScreen()),
                 );
               },
               child: Transform.translate(

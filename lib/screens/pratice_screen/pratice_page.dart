@@ -30,7 +30,7 @@ class _PracticePageState extends State<PracticePage> {
   }
 
   Future<void> fetchQuestions() async {
-    final uri = '${AppConfig.baseUri}/userapp/random-questions/${widget.catId}/';
+    final uri = '${AppConfig.baseUri}/api/random-questions/${widget.catId}/';
     try {
       final response = await http.get(Uri.parse(uri), headers: {'Content-Type': 'application/json'});
       if (response.statusCode == 200) {

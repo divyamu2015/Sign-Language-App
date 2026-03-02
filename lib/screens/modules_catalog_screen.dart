@@ -15,6 +15,7 @@ import 'quiz_screen/quiz_page.dart';
 import 'profile_manage.dart';
 import 'learning_path_screen.dart';
 import 'lessons.dart';
+import 'ai_camera_screen.dart';
 
 // ─── Color Palette ───────────────────────────────────────────────────────────
 class _CatalogColors {
@@ -431,12 +432,9 @@ class _ModulesCatalogScreenState extends State<ModulesCatalogScreen> {
             // Camera FAB
             GestureDetector(
               onTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('AI Camera coming soon!', style: GoogleFonts.spaceGrotesk()),
-                    behavior: SnackBarBehavior.floating,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const AiCameraScreen()),
                 );
               },
               child: Transform.translate(

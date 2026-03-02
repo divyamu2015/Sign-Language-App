@@ -21,8 +21,7 @@ class _FAQScreenState extends State<FAQScreen> {
   }
 
   Future<void> fetchFAQs() async {
-    final uri =
-        Uri.parse('${AppConfig.baseUri}/userapp/faqs/');
+    final uri = Uri.parse('${AppConfig.baseUri}/api/faqs/');
     try {
       final response = await http.get(uri);
       if (response.statusCode == 200) {

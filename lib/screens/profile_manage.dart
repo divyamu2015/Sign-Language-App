@@ -6,6 +6,8 @@ import 'package:animate_do/animate_do.dart';
 
 import 'home_screen.dart'; // To reuse ClayContainer and AppColors
 import '../config/app_config.dart';
+import 'splash_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class UserProfManage extends StatefulWidget {
   const UserProfManage({super.key, this.userId = 0});
@@ -220,6 +222,50 @@ class _UserProfManageState extends State<UserProfManage> {
                   ),
                 ),
               ),
+              const SizedBox(height: 40),
+              FadeInUp(
+                delay: const Duration(milliseconds: 200),
+                child: GestureDetector(
+                  onTap: () async {
+                    final prefs = await SharedPreferences.getInstance();
+                    await prefs.remove('jwt_token');
+                    await prefs.remove('user_id');
+                    await prefs.remove('user_name');
+                    
+                    if (mounted) {
+                      Navigator.pushAndRemoveUntil(
+                        context,
+                        MaterialPageRoute(builder: (_) => const SplashScreen()),
+                        (route) => false,
+                      );
+                    }
+                  },
+                  child: ClayContainer(
+                    height: 64,
+                    color: Colors.redAccent,
+                    borderRadius: 20,
+                    child: Center(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.logout_rounded, color: Colors.white, size: 20),
+                          const SizedBox(width: 12),
+                          Text(
+                            'LOGOUT',
+                            style: GoogleFonts.lexend(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w900,
+                              color: Colors.white,
+                              letterSpacing: 1.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
             ],
           ),
     );

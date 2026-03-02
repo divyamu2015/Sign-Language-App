@@ -13,6 +13,9 @@ class AppConfig {
   static String getLessonDetailUri(int lessonId) => '$baseUri/api/lessons/$lessonId';
 
   // ─── Quizzes & Modules ────────────────────────────────────────────────────
+  static const String quizzesUri = '$baseUri/api/quizzes';
+  static String getQuizDetailUri(int quizId) => '$baseUri/api/quizzes/$quizId';
+  static String submitQuizUri(int quizId) => '$baseUri/api/quizzes/$quizId/submit';
   static String getLevelQuestionsUri(int levelId) => '$baseUri/api/levels/$levelId/questions';
   static String submitLevelAnswersUri(int levelId) => '$baseUri/api/levels/$levelId/submit';
   static String completeModuleUri(int moduleId) => '$baseUri/api/modules/$moduleId/complete';
@@ -22,12 +25,13 @@ class AppConfig {
   static const String dailyCheckinUri = '$baseUri/api/user/daily-checkin';
   static const String userMilestonesUri = '$baseUri/api/user/milestones';
   static const String userAchievementsUri = '$baseUri/api/user/achievements';
-  static String viewProfileUri(int userId) => '$baseUri/userapp/view_profile/$userId/';
-  static String updateProfileUri(int userId) => '$baseUri/userapp/profile/update/$userId/';
+  static String viewProfileUri(int userId) => '$baseUri/api/user/view_profile/$userId';
+  static String updateProfileUri(int userId) => '$baseUri/api/user/profile/update/$userId';
 
   // ─── Social & AI ──────────────────────────────────────────────────────────
   static const String leaderboardUri = '$baseUri/api/leaderboard';
   static const String verifyGestureUri = '$baseUri/api/ai/verify-gesture';
+  static const String detectSignUri = '$baseUri/api/ai/detect-sign';
 
   // ─── App Settings & Feedback ──────────────────────────────────────────────
   static const String appConfigUri = '$baseUri/api/app/config';

@@ -56,7 +56,11 @@ class _LoginPageState extends State<LoginPage> {
 
   void _devLogin() async {
     // Hidden dev hook to bypass login
-    await _storeUserId(117);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('user_id', 117);
+    await prefs.setString('user_name', 'Developer');
+    await prefs.setString('jwt_token', 'dev-token-placeholder');
+    
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(

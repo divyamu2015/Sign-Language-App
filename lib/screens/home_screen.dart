@@ -1,5 +1,6 @@
 import 'dart:math';
 import 'dart:convert';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:google_fonts/google_fonts.dart';
@@ -21,6 +22,8 @@ import 'modules_catalog_screen.dart';
 import 'learning_path_screen.dart';
 import 'lessons.dart';
 import 'sign_dictionary_screen.dart';
+import 'quiz_screen/global_quizzes_screen.dart';
+import 'ai_camera_screen.dart';
 
 // ─── Color Palette ───────────────────────────────────────────────────────────
 class AppColors {
@@ -266,18 +269,34 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   Future<void> _fetchCategories() async {
     try {
-      final response = await http.get(Uri.parse(AppConfig.categoryView));
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('jwt_token');
+
+      final response = await http.get(
+        Uri.parse(AppConfig.categoriesUri),
+        headers: {
+          'Accept': 'application/json',
+          if (token != null) 'Authorization': 'Bearer $token',
+        },
+      );
       if (response.statusCode == 200) {
-        List<dynamic> data = jsonDecode(response.body);
+        final dynamic rawData = jsonDecode(response.body);
+        List<dynamic> data = [];
+        
+        if (rawData is List) {
+          data = rawData;
+        } else if (rawData is Map) {
+          data = rawData['results'] ?? rawData['data'] ?? rawData['categories'] ?? [];
+        }
+
         final prefs = await SharedPreferences.getInstance();
         
         // Merge with local progress
         for (var cat in data) {
-          int catId = cat['id'] ?? 0;
+          final dynamic rawId = cat['id'];
+          final int catId = rawId is int ? rawId : int.tryParse(rawId?.toString() ?? '') ?? 0;
           int localCount = prefs.getInt('cat_progress_$catId') ?? 0;
-          // In real mode, we might trust server, but local is good for immediate feedback
           if (localCount > 0 && (cat['progress'] == null || cat['progress'] == 0)) {
-            // Estimate percentage if server hasn't updated
             cat['progress'] = (localCount * 10).clamp(0, 100); 
           }
         }
@@ -289,7 +308,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           });
         }
       } else {
-        throw Exception('Server error');
+        throw Exception('Server error: ${response.statusCode}');
       }
     } catch (e) {
       if (AppConfig.useDemoMode) {
@@ -330,6 +349,14 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             _isLoading = false;
           });
         }
+      } else {
+        if (mounted) {
+          setState(() => _isLoading = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed to load modules: $e')),
+          );
+        }
+        debugPrint('Error fetching categories: $e');
       }
     }
   }
@@ -339,7 +366,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     
     switch (index) {
       case 1: Navigator.push(context, MaterialPageRoute(builder: (_) => const SignDictionaryScreen())); break;
-      case 2: Navigator.push(context, MaterialPageRoute(builder: (_) => PracCategoryScreen(catName: 'Practice', userId: widget.userId))); break;
+      case 2: Navigator.push(context, MaterialPageRoute(builder: (_) => const GlobalQuizzesScreen())); break;
       case 3: Navigator.push(context, MaterialPageRoute(builder: (_) => UserProfManage(userId: widget.userId))); break;
       default: setState(() => _selectedNavIndex = index);
     }
@@ -364,6 +391,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   SliverToBoxAdapter(child: _buildHeader()),
                   SliverToBoxAdapter(child: _buildStreakCard()),
                   SliverToBoxAdapter(child: _buildDailyGoal()),
+                  SliverToBoxAdapter(child: _buildQuizBanner()),
                   SliverPadding(
                     padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                     sliver: _buildCategoryGrid(),
@@ -575,6 +603,62 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
+  Widget _buildQuizBanner() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+      child: GestureDetector(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const GlobalQuizzesScreen()),
+          );
+        },
+        child: ClayContainer(
+          height: 90,
+          color: AppColors.purple,
+          spread: 8,
+          child: Row(
+            children: [
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 20),
+                child: Icon(Icons.psychology_rounded, color: Colors.white, size: 40),
+              ),
+              Expanded(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'READY FOR A CHALLENGE?',
+                      style: GoogleFonts.lexend(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w900,
+                        color: Colors.white.withOpacity(0.8),
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                    Text(
+                      'Take a Global Quiz!',
+                      style: GoogleFonts.lexend(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w900,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Padding(
+                padding: EdgeInsets.only(right: 20),
+                child: Icon(Icons.arrow_forward_ios_rounded, color: Colors.white, size: 20),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildCategoryGrid() {
     if (_isLoading) {
       return const SliverToBoxAdapter(child: Center(child: CircularProgressIndicator()));
@@ -589,14 +673,16 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       delegate: SliverChildBuilderDelegate(
         (context, index) {
           final cat = _categories[index];
+          final dynamic rawId = cat['id'];
+          final int catId = rawId is int ? rawId : int.tryParse(rawId?.toString() ?? '') ?? 0;
+          
           // Re-map backend keys if necessary
           String title = cat['category_name'] ?? cat['name'] ?? cat['title'] ?? 'Module';
           int progressValue = cat['progress'] ?? 0;
           
           // --- Force Unlock Only Alphabets and Numbers ---
           String t = title.toLowerCase();
-          bool isLocked = !(t.contains('alphabet') || t.contains('number'));
-          // -----------------------------------------------
+          bool isLocked = false; // All categories are unlocked in this version
           
           // Determine icon and color based on title or index
           IconData icon = Icons.sign_language_rounded;
@@ -607,26 +693,24 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             bgColor = cat['color'] ?? Colors.white;
           } else {
             // Re-map common categories
-            if (t.contains('alphabet')) { icon = Icons.font_download_rounded; bgColor = Colors.blue.shade50; }
+            if (t.contains('alphabet') || t.contains('alfabet')) { 
+              icon = Icons.font_download_rounded; 
+              bgColor = Colors.blue.shade50; 
+            }
             else if (t.contains('greet')) { icon = Icons.front_hand_rounded; bgColor = Colors.green.shade50; }
             else if (t.contains('family')) { icon = Icons.people_rounded; bgColor = Colors.purple.shade50; }
             else if (t.contains('number')) { icon = Icons.numbers_rounded; bgColor = Colors.orange.shade50; }
-            
-            if (isLocked) { 
-              icon = Icons.lock_rounded; 
-              bgColor = Colors.grey.shade100;
-            }
           }
 
           return FadeInUp(
             delay: Duration(milliseconds: 100 * index),
             child: GestureDetector(
-              onTap: isLocked ? null : () {
+              onTap: () {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
                     builder: (context) => LessonPage(
-                      catId: cat['id'] ?? 0,
+                      catId: catId,
                       catName: title,
                     ),
                   ),
@@ -647,10 +731,25 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         color: bgColor,
                         spread: 0,
                         isInner: true,
-                        child: Icon(
-                          icon,
-                          color: isLocked ? Colors.grey : Color.lerp(bgColor, Colors.black, 0.45),
-                          size: 38,
+                        child: Center(
+                          child: cat['icon'] is String && (cat['icon'] as String).isNotEmpty
+                            ? ClipRRect(
+                                borderRadius: BorderRadius.circular(20),
+                                child: CachedNetworkImage(
+                                  imageUrl: (cat['icon'] as String).startsWith('http') 
+                                      ? cat['icon'] 
+                                      : '${AppConfig.baseUri}${cat['icon'].startsWith('/') ? cat['icon'] : '/${cat['icon']}'}',
+                                  width: 48,
+                                  height: 48,
+                                  fit: BoxFit.contain,
+                                  errorWidget: (_, __, ___) => Icon(icon, color: Colors.grey, size: 38),
+                                ),
+                              )
+                            : Icon(
+                                icon,
+                                color: isLocked ? Colors.grey : Color.lerp(bgColor, Colors.black, 0.45),
+                                size: 38,
+                              ),
                         ),
                       ),
                       const SizedBox(height: 18),
@@ -725,7 +824,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           children: [
             _buildNavItem(0, Icons.dashboard_rounded, 'Home'),
             _buildNavItem(1, Icons.menu_book_rounded, 'Ask Me'),
-            _buildNavItem(2, Icons.fitness_center_rounded, 'Practice'),
+            _buildNavItem(2, Icons.fitness_center_rounded, 'Quiz'),
             _buildNavItem(3, Icons.person_rounded, 'Profile'),
           ],
         ),

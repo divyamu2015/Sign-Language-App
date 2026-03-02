@@ -4,6 +4,7 @@ import 'dart:async';
 import 'home_screen.dart';
 import '../config/app_config.dart';
 import '../authentication_screen/login_screen/login_view/login_page.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -15,15 +16,39 @@ class SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    Timer(const Duration(seconds: 3), () {
-      Widget nextScreen;
-      if (AppConfig.useDemoMode) {
-        nextScreen = const HomeScreen(
-            userId: AppConfig.demoUserId, userName: AppConfig.demoUserName);
-      } else {
-        nextScreen = const LoginPage();
-      }
+    _checkLoginStatus();
+  }
 
+  Future<void> _checkLoginStatus() async {
+    // Wait for splash animation/time
+    await Future.delayed(const Duration(seconds: 3));
+
+    if (!mounted) return;
+
+    final prefs = await SharedPreferences.getInstance();
+    final String? token = prefs.getString('jwt_token');
+    final int? userId = prefs.getInt('user_id');
+    final String? userName = prefs.getString('user_name');
+
+    Widget nextScreen;
+
+    if (AppConfig.useDemoMode) {
+      nextScreen = const HomeScreen(
+        userId: AppConfig.demoUserId,
+        userName: AppConfig.demoUserName,
+      );
+    } else if (token != null && userId != null) {
+      // User is already logged in
+      nextScreen = HomeScreen(
+        userId: userId,
+        userName: userName ?? 'User',
+      );
+    } else {
+      // Not logged in
+      nextScreen = const LoginPage();
+    }
+
+    if (mounted) {
       Navigator.of(context).pushReplacement(
         PageRouteBuilder(
           pageBuilder: (context, animation, secondaryAnimation) => nextScreen,
@@ -32,7 +57,7 @@ class SplashScreenState extends State<SplashScreen> {
           },
         ),
       );
-    });
+    }
   }
 
   @override

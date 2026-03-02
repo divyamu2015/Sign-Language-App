@@ -37,28 +37,53 @@ class _LessonPageState extends State<LessonPage> {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('jwt_token');
 
-      final response = await http.get(
-        Uri.parse('${AppConfig.baseUri}/userapp/categories/${widget.catId}/lessons/'),
+      final listResponse = await http.get(
+        Uri.parse(AppConfig.getLessonsUri(widget.catId)),
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
           if (token != null) 'Authorization': 'Bearer $token',
         },
       );
-      if (response.statusCode == 200) {
-        if (mounted) {
-          setState(() {
-            vocabulary = json.decode(response.body);
-            _isLoading = false;
-          });
-          if (widget.initialIndex > 0 && vocabulary.length > widget.initialIndex) {
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              _pageController.jumpToPage(widget.initialIndex);
-            });
+
+      if (listResponse.statusCode != 200) {
+        throw Exception('Failed to load lessons: ${listResponse.statusCode}');
+      }
+
+      final listData = json.decode(listResponse.body);
+      List<dynamic> lessonList = [];
+      if (listData is List) {
+        lessonList = listData;
+      } else if (listData is Map) {
+        lessonList = listData['lessons'] ?? listData['results'] ?? listData['data'] ?? [];
+      }
+
+      // Backend has no image field — construct URL from the lesson title
+      // Letters → /media/lesson_images/sign_A.png
+      // Numbers → /media/lesson_images/sign_0.png (same folder, just digits)
+      for (var lesson in lessonList) {
+        final String title = (lesson['lesson_title'] ?? lesson['name'] ?? lesson['title'] ?? '').toString().trim();
+        if (title.isNotEmpty) {
+          final bool isDigit = RegExp(r'^\d+$').hasMatch(title);
+          if (isDigit) {
+            // Try number-specific path first; errorWidget will show if missing
+            lesson['image'] = '/media/lesson_images/sign_$title.png';
+          } else {
+            lesson['image'] = '/media/lesson_images/sign_${title.toUpperCase()}.png';
           }
         }
-      } else {
-        throw Exception('Failed to load vocabulary');
+      }
+
+      if (mounted) {
+        setState(() {
+          vocabulary = lessonList;
+          _isLoading = false;
+        });
+        if (widget.initialIndex > 0 && vocabulary.length > widget.initialIndex) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _pageController.jumpToPage(widget.initialIndex);
+          });
+        }
       }
     } catch (e) {
       if (AppConfig.useDemoMode) {
@@ -67,22 +92,27 @@ class _LessonPageState extends State<LessonPage> {
             if (widget.catName.toLowerCase().contains('alphabet')) {
               vocabulary = List.generate(26, (index) => {
                 "id": index + 1,
-                "name": String.fromCharCode(65 + index),
+                "lesson_title": String.fromCharCode(65 + index),
                 "description": "Learn to sign '${String.fromCharCode(65 + index)}'"
               });
             } else {
               vocabulary = [
-                {"id": 1, "name": "Hello", "description": "A polite greeting"},
-                {"id": 2, "name": "Thank You", "description": "Express gratitude"},
-                {"id": 3, "name": "Please", "description": "A polite request"},
-                {"id": 4, "name": "Help", "description": "Ask for assistance"},
+                {"id": 1, "lesson_title": "Hello", "description": "A polite greeting"},
+                {"id": 2, "lesson_title": "Thank You", "description": "Express gratitude"},
+                {"id": 3, "lesson_title": "Please", "description": "A polite request"},
+                {"id": 4, "lesson_title": "Help", "description": "Ask for assistance"},
               ];
             }
             _isLoading = false;
           });
         }
       } else {
-        if (mounted) setState(() => _isLoading = false);
+        if (mounted) {
+          setState(() => _isLoading = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed to load lessons: $e')),
+          );
+        }
       }
     }
   }
@@ -154,9 +184,21 @@ class _LessonPageState extends State<LessonPage> {
                         onPageChanged: (index) => setState(() => _currentIndex = index),
                         itemBuilder: (context, index) {
                           final item = vocabulary[index];
-                          final String? imageUrl = item["image"];
-                          final String name = item["name"] ?? item["lesson_name"] ?? 'Sign';
-                          final String? desc = item["description"];
+                          final String? imageUrl = item["image"] ?? item["video_thumbnail"] ?? item["image_url"] ?? item["lesson_image"];
+                          final String name = item["lesson_title"] ?? item["lesson_name"] ?? item["name"] ?? item["title"] ?? 'Sign';
+                          final String? desc = item["description"] ?? item["content"] ?? item["lesson_description"];
+                          
+                          // Backend may return http://localhost:8001/... — replace with real baseUri
+                          String _fixUrl(String? raw) {
+                            if (raw == null || raw.isEmpty) return '';
+                            final uri = Uri.tryParse(raw);
+                            if (uri != null && (uri.host == 'localhost' || uri.host == '127.0.0.1')) {
+                              return '${AppConfig.baseUri}${uri.path}';
+                            }
+                            if (raw.startsWith('http')) return raw;
+                            return '${AppConfig.baseUri}${raw.startsWith('/') ? raw : '/$raw'}';
+                          }
+                          final String finalImageUrl = _fixUrl(imageUrl);
 
                           return Padding(
                             padding: const EdgeInsets.all(24.0),
@@ -177,11 +219,9 @@ class _LessonPageState extends State<LessonPage> {
                                         ),
                                         child: ClipRRect(
                                           borderRadius: BorderRadius.circular(32),
-                                          child: imageUrl != null && imageUrl.isNotEmpty
+                                          child: finalImageUrl.isNotEmpty
                                               ? CachedNetworkImage(
-                                                  imageUrl: imageUrl.startsWith('http')
-                                                      ? imageUrl
-                                                      : '${AppConfig.baseUri}${imageUrl.startsWith('/') ? imageUrl : '/$imageUrl'}',
+                                                  imageUrl: finalImageUrl,
                                                   fit: BoxFit.contain,
                                                   placeholder: (context, url) => const Center(child: CircularProgressIndicator()),
                                                   errorWidget: (context, url, error) => const Icon(Icons.broken_image_rounded, size: 64, color: AppColors.clayShadow),
